@@ -13,7 +13,7 @@ function resolveTenantSubdomain(): string | undefined {
   if (envTenant) return envTenant;
   if (typeof window === 'undefined') return undefined;
 
-  const match = window.location.pathname.match(/^\/tenants\/([^/]+)/i);
+  const match = window.location.pathname.match(/^\/t\/([^/]+)/i);
   if (match?.[1]) return match[1];
 
   const host = window.location.hostname;
@@ -28,7 +28,7 @@ export function getAuthHeader(): Record<string, string> {
   const tenant = resolveTenantSubdomain();
   return {
     ...(token ? { authorization: `Bearer ${token}` } : {}),
-    ...(tenant ? { 'x-mt-tenant-subdomain': tenant } : {}),
+    ...(tenant ? { 'x-mt-tenant-slug': tenant } : {}),
   };
 }
 

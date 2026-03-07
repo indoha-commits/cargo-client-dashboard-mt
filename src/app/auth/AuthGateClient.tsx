@@ -15,9 +15,11 @@ export function AuthGateClient({ children }: { children: React.ReactNode }) {
     async function bootstrap() {
       try {
         // Handle redirect callback: /auth/callback#access_token=...&refresh_token=...
-        if (window.location.pathname.startsWith('/auth/callback')) {
+        const callbackIndex = window.location.pathname.indexOf('/auth/callback');
+        if (callbackIndex !== -1) {
           await setSessionFromUrlHash();
-          window.history.replaceState({}, document.title, '/');
+          const nextPath = window.location.pathname.slice(0, callbackIndex) || '/';
+          window.history.replaceState({}, document.title, nextPath);
         }
 
         const sb = getSupabase();
