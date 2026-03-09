@@ -1,5 +1,6 @@
 import { Search, Ship, Package, Clock, LogOut } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { getClientMe, type ClientMeResponse, getClientShipments, type ClientShipmentRow } from '../api/client';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import {
@@ -10,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
-import { getClientShipments, type ClientShipmentRow } from '../api/client';
 
 type CargoStatus = 'COMPLETE' | 'CLIENT_ACTION_REQUIRED' | 'OPS_ACTION_REQUIRED' | 'IN_PROGRESS' | 'UNKNOWN';
 
@@ -79,6 +79,31 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
 
 export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: CargoListProps) {
   const [search, setSearch] = useState('');
+  const [clientContext, setClientContext] = useState<ClientMeResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getClientMe();
+        if (!cancelled) setClientContext(data);
+      } catch (e) {
+        if (!cancelled) setClientContext(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const greeting = useMemo(() => {
+    const tenantName = clientContext?.tenant?.company_name || clientContext?.tenant?.slug || 'Tenant';
+    const clientName = clientContext?.client?.name;
+    if (clientName) {
+      return `Hello ${clientName} (Tenant: ${tenantName})`;
+    }
+    return `Hello ${tenantName}`;
+  }, [clientContext]);
   const [rows, setRows] = useState<CargoRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -153,7 +178,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h2 className="text-foreground mb-1">Active Shipments</h2>
-          <p className="text-muted-foreground">Track and manage cargo shipments</p>
+          <p className="text-muted-foreground">{greeting}</p>
         </div>
 
         <div className="mb-6">

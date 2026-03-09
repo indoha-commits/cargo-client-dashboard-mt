@@ -436,7 +436,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
   const requiredDocs = useMemo(() => {
     if (!detail?.cargo.category) return [] as string[];
-    return requiredDocsForCategory(detail.cargo.category as any);
+    const docs = requiredDocsForCategory(detail.cargo.category as any);
+    return docs.filter((doc) => !['WH7_DOC', 'EXIT_NOTE', 'IMPORT_PERMIT'].includes(doc));
   }, [detail?.cargo.category]);
 
   const uploadProgress = useMemo(() => {

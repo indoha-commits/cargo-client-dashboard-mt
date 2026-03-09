@@ -51,6 +51,19 @@ export type ClientShipmentRow = {
   created_at: string;
 };
 
+export type ClientMeResponse = {
+  tenant: { company_name?: string | null; subdomain?: string | null; slug?: string | null } | null;
+  tenant_subdomain: string | null;
+  membership: { role?: string | null } | null;
+  subscription: { status?: string | null } | null;
+  client: { id: string; name: string; slug: string } | null;
+  client_slug: string | null;
+};
+
+export async function getClientMe(): Promise<ClientMeResponse> {
+  return await fetchJson<ClientMeResponse>(`/client/me`, { method: 'GET' });
+}
+
 export async function getClientShipments(): Promise<{ shipments: ClientShipmentRow[] }> {
   const data = await fetchJson<{ shipments: ClientShipmentRow[] }>(`/client/shipments`, { method: 'GET' });
   return { shipments: data?.shipments ?? [] };

@@ -21,12 +21,13 @@ function buildTenantBasePath(tenantSlug?: string) {
 }
 
 function CargoListRoute({ onLogout, onToggleTheme, theme }: CargoListRouteProps) {
-  const { tenantSlug } = useParams();
+  const { tenantSlug, clientSlug } = useParams();
   const navigate = useNavigate();
   const basePath = buildTenantBasePath(tenantSlug);
+  const clientPath = clientSlug ? `${basePath}/client/${clientSlug}` : basePath;
 
   const handleSelectCargo = (cargoId: string) => {
-    navigate(`${basePath}/shipments/${cargoId}`);
+    navigate(`${clientPath}/shipments/${cargoId}`);
   };
 
   return (
@@ -40,18 +41,19 @@ function CargoListRoute({ onLogout, onToggleTheme, theme }: CargoListRouteProps)
 }
 
 function CargoDetailRoute({ onToggleTheme, theme }: CargoDetailRouteProps) {
-  const { cargoId, tenantSlug } = useParams();
+  const { cargoId, tenantSlug, clientSlug } = useParams();
   const navigate = useNavigate();
   const basePath = buildTenantBasePath(tenantSlug);
+  const clientPath = clientSlug ? `${basePath}/client/${clientSlug}` : basePath;
 
   if (!cargoId) {
-    return <Navigate to={basePath || '/'} replace />;
+    return <Navigate to={clientPath || '/'} replace />;
   }
 
   return (
     <CargoDetail
       cargoId={cargoId}
-      onBack={() => navigate(basePath || '/', { replace: false })}
+      onBack={() => navigate(clientPath || '/', { replace: false })}
       onToggleTheme={onToggleTheme}
       theme={theme}
     />
@@ -93,12 +95,20 @@ export default function App() {
   return (
     <Routes>
       <Route
+        path="/t/:tenantSlug/client/:clientSlug/shipments/:cargoId"
+        element={<CargoDetailRoute onToggleTheme={toggleTheme} theme={theme} />}
+      />
+      <Route
         path="/t/:tenantSlug/shipments/:cargoId"
         element={<CargoDetailRoute onToggleTheme={toggleTheme} theme={theme} />}
       />
       <Route
         path="/shipments/:cargoId"
         element={<CargoDetailRoute onToggleTheme={toggleTheme} theme={theme} />}
+      />
+      <Route
+        path="/t/:tenantSlug/client/:clientSlug"
+        element={<CargoListRoute onLogout={handleLogout} onToggleTheme={toggleTheme} theme={theme} />}
       />
       <Route
         path="/t/:tenantSlug"
