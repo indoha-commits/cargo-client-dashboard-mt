@@ -186,3 +186,13 @@ export async function rejectClientCargoApproval(approvalId: string, rejectionRea
     { method: 'POST', body: JSON.stringify({ reason: rejectionReason }) }
   );
 }
+
+export type ClientStats = {
+  client_id: string;
+  total_cargo: number;
+  total_containers: number;
+};
+
+export async function getClientStats(): Promise<ClientStats> {
+  return await fetchJson<ClientStats>(`/client/stats`, { method: 'GET' });
+}

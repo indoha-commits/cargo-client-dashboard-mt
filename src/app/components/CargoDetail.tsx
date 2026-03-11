@@ -9,6 +9,7 @@ import {
   Ship,
   TriangleAlert,
   Upload,
+  XCircle,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from './ui/badge';
@@ -26,6 +27,7 @@ import {
   type ClientCargoDetail,
 } from '../api/client';
 import { uploadClientDocumentFile } from '../auth/storage';
+import { getSupabase } from '../auth/supabase';
 
 interface CargoDetailProps {
   cargoId: string;
@@ -107,9 +109,22 @@ function mapEventHeadline(eventType: string): { status: string; location?: strin
     case 'CREATED':
       return {
         status: 'Cargo created',
-        location: 'Files detected in bucket (pre-validation).',
+        location: 'Shipment record initiated in the system.',
+      };
+    case 'ALL_DOCUMENTS_UPLOADED':
+    case 'DOCUMENTS_UPLOADED':
+      return {
+        status: 'All files uploaded',
+        location: 'All required documents have been uploaded.',
+      };
+    case 'ALL_DOCUMENTS_APPROVED':
+    case 'DOCUMENTS_APPROVED':
+      return {
+        status: 'All Documents Approved',
+        location: 'All uploaded documents have been verified and approved.',
       };
     case 'CLIENT_VALIDATED_ASSESSMENT_DRAFT_DOCUMENTS':
+    case 'DRAFT_ASSESSMENT_VALIDATED':
       return {
         status: 'Draft/Assessment validated',
         location: 'Client approved draft and assessment documents.',
@@ -125,16 +140,11 @@ function mapEventHeadline(eventType: string): { status: string; location?: strin
         status: 'Physical verification completed',
         location: 'On-site inspection completed by ops team.',
       };
-    case 'CARGO_IN_TRANSIT_TO_WAREHOUSE':
+    case 'CARGO_ARRIVED_DESTINATION':
+    case 'DESTINATION_ARRIVAL':
       return {
-        status: 'Cargo in transit to warehouse',
-        location: 'Shipment en route to the warehouse facility.',
-      };
-    case 'CARGO_REACHED_WAREHOUSE':
-    case 'WAREHOUSE_ARRIVAL':
-      return {
-        status: 'Cargo reached warehouse',
-        location: 'Shipment received at the warehouse.',
+        status: 'Cargo arrived at destination',
+        location: 'Shipment has reached its final destination.',
       };
     default:
       return { status: formatLabel(eventType) };
@@ -172,7 +182,7 @@ function buildDerivedTimeline(detail: ClientCargoDetail, approvals: CargoApprova
   events.push({
     label: 'Cargo created',
     at: detail.cargo.created_at,
-    location: 'Files detected in bucket (pre-validation).',
+    location: 'Shipment record initiated in the system.',
     completed: true,
   });
 
@@ -194,46 +204,38 @@ function buildDerivedTimeline(detail: ClientCargoDetail, approvals: CargoApprova
 
   if (earliestUpload) {
     events.push({
-      label: 'Documents uploaded',
+      label: 'All files uploaded',
       at: earliestUpload,
-      location: 'Upload evidence captured in storage.',
-      detail: 'Files detected in bucket (pre-validation).',
+      location: 'All required documents have been uploaded.',
       completed: true,
-    });
-  }
-
-  // 3) Validation step (explicit when we see bucket uploads without verification)
-  const hasUploaded = detail.documents.some((d) => d.status === 'UPLOADED');
-  const hasAnyVerified = detail.documents.some((d) => d.status === 'VERIFIED');
-  const hasPendingValidation = hasUploaded && !hasAnyVerified;
-
-  if (hasPendingValidation) {
-    events.push({
-      label: 'Validation in progress',
-      at: latestUpload ?? earliestUpload ?? detail.cargo.created_at,
-      location: 'Ops validation checks underway.',
-      detail: 'Documents are present in the bucket and awaiting verification.',
-      completed: false,
     });
   }
 
   if (latestVerified) {
     events.push({
-      label: 'Documents verified',
+      label: 'All Documents Approved',
       at: latestVerified,
-      location: 'Verification complete (ops review).',
+      location: 'All uploaded documents have been verified and approved.',
       completed: true,
     });
   }
 
-  // 4) Approvals (draft/assessment) visibility
-  for (const a of approvals) {
+  // 3) Approvals (draft/assessment) visibility - only show when BOTH are approved
+  const draftApproval = approvals.find((a) => a.kind === 'DRAFT_VALIDATION');
+  const assessmentApproval = approvals.find((a) => a.kind === 'ASSESSMENT_VALIDATION');
+  
+  // Only add the "Draft/Assessment validated" event if BOTH are approved
+  if (draftApproval?.status === 'APPROVED' && assessmentApproval?.status === 'APPROVED') {
+    // Use the later of the two approval timestamps
+    const draftTime = draftApproval.decided_at ?? draftApproval.created_at;
+    const assessmentTime = assessmentApproval.decided_at ?? assessmentApproval.created_at;
+    const laterTime = Date.parse(draftTime) > Date.parse(assessmentTime) ? draftTime : assessmentTime;
+    
     events.push({
-      label: `${formatLabel(a.kind)} ${formatLabel(a.status)}`,
-      at: a.decided_at ?? a.created_at,
-      location: 'Draft shared for client review.',
-      detail: a.decided_at ? `Decided ${new Date(a.decided_at).toLocaleString()}` : 'Awaiting decision',
-      completed: a.status !== 'PENDING',
+      label: 'Draft/Assessment validated',
+      at: laterTime,
+      location: 'Client approved draft and assessment documents.',
+      completed: true,
     });
   }
 
@@ -346,6 +348,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Fetch initial cargo detail and approvals
   useEffect(() => {
     let cancelled = false;
     if (!workersEnabled) {
@@ -383,6 +386,102 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     return () => {
       cancelled = true;
+    };
+  }, [cargoId, workersEnabled]);
+
+  // Real-time subscriptions for cargo updates
+  useEffect(() => {
+    if (!workersEnabled) return;
+
+    const supabase = getSupabase();
+
+    const refreshCargoData = () => {
+      getClientCargoDetail(cargoId)
+        .then((d) => {
+          setDetail(d);
+          return getClientCargoApprovals(cargoId);
+        })
+        .then((approvalsRes) => {
+          setApprovals(approvalsRes.approvals);
+        })
+        .catch((e) => {
+          console.error('Failed to refresh cargo data:', e);
+        });
+    };
+
+    // Subscribe to cargo_events table (timeline updates)
+    const eventsSubscription = supabase
+      .channel(`cargo_events_${cargoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'cargo_events',
+          filter: `cargo_id=eq.${cargoId}`,
+        },
+        () => {
+          refreshCargoData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to client_documents table (document uploads/updates)
+    const documentsSubscription = supabase
+      .channel(`client_documents_${cargoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_documents',
+          filter: `cargo_id=eq.${cargoId}`,
+        },
+        () => {
+          refreshCargoData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to cargo_client_approvals table (approval status changes)
+    const approvalsSubscription = supabase
+      .channel(`cargo_approvals_${cargoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cargo_client_approvals',
+          filter: `cargo_id=eq.${cargoId}`,
+        },
+        () => {
+          refreshCargoData();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to cargo table (general cargo updates)
+    const cargoSubscription = supabase
+      .channel(`cargo_${cargoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'cargo',
+          filter: `id=eq.${cargoId}`,
+        },
+        () => {
+          refreshCargoData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(eventsSubscription);
+      supabase.removeChannel(documentsSubscription);
+      supabase.removeChannel(approvalsSubscription);
+      supabase.removeChannel(cargoSubscription);
     };
   }, [cargoId, workersEnabled]);
 

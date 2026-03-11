@@ -19,7 +19,10 @@ export function AuthGateClient({ children }: { children: React.ReactNode }) {
         if (callbackIndex !== -1) {
           await setSessionFromUrlHash();
           const nextPath = window.location.pathname.slice(0, callbackIndex) || '/';
+          // Clear the URL hash containing sensitive tokens for security
           window.history.replaceState({}, document.title, nextPath);
+          // Also clear the hash immediately
+          window.location.hash = '';
         }
 
         const sb = getSupabase();

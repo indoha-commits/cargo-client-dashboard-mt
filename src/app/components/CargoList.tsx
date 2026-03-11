@@ -1,6 +1,7 @@
-import { Search, Ship, Package, Clock, LogOut } from 'lucide-react';
+import { Search, Ship, Package, Clock, LogOut, Container } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { getClientMe, type ClientMeResponse, getClientShipments, type ClientShipmentRow } from '../api/client';
+import { getClientMe, type ClientMeResponse, getClientShipments, type ClientShipmentRow, getClientStats, type ClientStats } from '../api/client';
+import { getSupabase } from '../auth/supabase';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import {
@@ -36,11 +37,11 @@ interface CargoListProps {
 }
 
 const statusConfig: Record<CargoStatus, { label: string; color: string }> = {
-  COMPLETE: { label: 'Complete', color: 'bg-[#10b981] text-white' },
-  CLIENT_ACTION_REQUIRED: { label: 'Waiting on You', color: 'bg-primary text-primary-foreground' },
-  OPS_ACTION_REQUIRED: { label: 'Waiting on Ops', color: 'bg-[#f59e0b] text-white' },
-  IN_PROGRESS: { label: 'In Progress', color: 'bg-muted text-foreground' },
-  UNKNOWN: { label: 'Unknown', color: 'bg-muted text-foreground' },
+  COMPLETE: { label: 'Complete', color: 'bg-green-600 dark:bg-green-500 text-white' },
+  CLIENT_ACTION_REQUIRED: { label: 'Waiting on You', color: 'bg-blue-600 dark:bg-blue-500 text-white' },
+  OPS_ACTION_REQUIRED: { label: 'Waiting on Ops', color: 'bg-amber-600 dark:bg-amber-500 text-white' },
+  IN_PROGRESS: { label: 'In Progress', color: 'bg-slate-600 dark:bg-slate-500 text-white' },
+  UNKNOWN: { label: 'Unknown', color: 'bg-slate-400 dark:bg-slate-600 text-white' },
 };
 
 function deriveStatusFromNextAction(nextRequiredAction: string): CargoStatus {
@@ -73,7 +74,7 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
     lastUpdate,
     nextRequiredAction: s.next_required_action,
     status,
-    statusLabel: s.next_required_action ? mapActionLabel(s.next_required_action) : statusConfig[status].label,
+    statusLabel: statusConfig[status].label,
   };
 }
 
@@ -106,26 +107,86 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   }, [clientContext]);
   const [rows, setRows] = useState<CargoRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [stats, setStats] = useState<ClientStats | null>(null);
 
+  // Fetch initial shipments and stats
   useEffect(() => {
     let cancelled = false;
     setLoadError(null);
 
-    getClientShipments()
-      .then((res) => {
+    Promise.all([
+      getClientShipments(),
+      getClientStats().catch(() => null), // Don't fail if stats unavailable
+    ])
+      .then(([shipmentsRes, statsRes]) => {
         if (cancelled) return;
-        setRows(res.shipments.map(mapShipmentToRow));
+        setRows(shipmentsRes.shipments.map(mapShipmentToRow));
+        if (statsRes) setStats(statsRes);
       })
       .catch((e) => {
         if (cancelled) return;
-        // In dev/preview, workers might be disabled. Don't silently show a single mock record,
-        // because it looks like "only one shipment exists".
         setLoadError(e instanceof Error ? e.message : String(e));
         setRows([]);
       });
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  // Real-time subscription for cargo updates
+  useEffect(() => {
+    const supabase = getSupabase();
+    
+    // Subscribe to changes in cargo table
+    const cargoSubscription = supabase
+      .channel('cargo_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'cargo',
+        },
+        () => {
+          // Refetch shipments when any cargo changes
+          getClientShipments()
+            .then((res) => {
+              setRows(res.shipments.map(mapShipmentToRow));
+            })
+            .catch((e) => {
+              console.error('Failed to refresh shipments:', e);
+            });
+        }
+      )
+      .subscribe();
+
+    // Subscribe to changes in cargo_events table (for timeline updates)
+    const eventsSubscription = supabase
+      .channel('cargo_events_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'cargo_events',
+        },
+        () => {
+          // Refetch shipments when new events are added
+          getClientShipments()
+            .then((res) => {
+              setRows(res.shipments.map(mapShipmentToRow));
+            })
+            .catch((e) => {
+              console.error('Failed to refresh shipments:', e);
+            });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(cargoSubscription);
+      supabase.removeChannel(eventsSubscription);
     };
   }, []);
 
@@ -180,6 +241,35 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           <h2 className="text-foreground mb-1">Active Shipments</h2>
           <p className="text-muted-foreground">{greeting}</p>
         </div>
+
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-card border border-border rounded-sm p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-blue-500/10 rounded-lg">
+                  <Ship className="size-6 text-blue-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.total_cargo}</div>
+                  <div className="text-sm text-muted-foreground">Total Shipments</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-card border border-border rounded-sm p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-green-500/10 rounded-lg">
+                  <Container className="size-6 text-green-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.total_containers}</div>
+                  <div className="text-sm text-muted-foreground">Total Containers</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mb-6">
           <div className="relative max-w-md">
