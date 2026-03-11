@@ -97,14 +97,6 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     };
   }, []);
 
-  const greeting = useMemo(() => {
-    const tenantName = clientContext?.tenant?.company_name || clientContext?.tenant?.slug || 'Tenant';
-    const clientName = clientContext?.client?.name;
-    if (clientName) {
-      return `Hello ${clientName} (Tenant: ${tenantName})`;
-    }
-    return `Hello ${tenantName}`;
-  }, [clientContext]);
   const [rows, setRows] = useState<CargoRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
@@ -239,7 +231,6 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h2 className="text-foreground mb-1">Active Shipments</h2>
-          <p className="text-muted-foreground">{greeting}</p>
         </div>
 
         {/* Stats Cards */}
