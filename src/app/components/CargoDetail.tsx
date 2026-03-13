@@ -140,6 +140,21 @@ function mapEventHeadline(eventType: string): { status: string; location?: strin
         status: 'Physical verification completed',
         location: 'On-site inspection completed by ops team.',
       };
+    case 'ASSESSMENT_AND_DRAFT_WAITING_ON_VALIDATION':
+    case 'ASSESSMENT_AND_DRAFT_WAITING_ON_VALIDATION'.toLowerCase():
+    case 'ASSESSMENT_AND_DRAFT_WAITING_ON_VALIDATION'.toUpperCase():
+    case 'ASSESSMENT_AND_DRAFT_WAITING_ON_VALIDATION'.replace(/_/g, ' '):
+    case 'ASSESSMENT_AND_DRAFT_WAITING_ON_VALIDATION'.replace(/_/g, ' ').toLowerCase():
+      return {
+        status: 'Assessment and Draft waiting on validation',
+        location: 'Ops validation is in progress for the draft and assessment documents.',
+      };
+    case 'WAREHOUSE_ARRIVAL':
+    case 'CARGO_REACHED_WAREHOUSE':
+      return {
+        status: 'Warehouse arrival',
+        location: 'Shipment received at the warehouse.',
+      };
     case 'CARGO_ARRIVED_DESTINATION':
     case 'DESTINATION_ARRIVAL':
       return {
@@ -249,7 +264,7 @@ function buildDerivedTimeline(detail: ClientCargoDetail, approvals: CargoApprova
         date: t.date,
         time: t.time,
         status: ev.label,
-        location: ev.location ?? '—',
+        location: ev.location ?? 'Ops update recorded.',
         completed: ev.completed,
         detail: ev.detail,
       };
