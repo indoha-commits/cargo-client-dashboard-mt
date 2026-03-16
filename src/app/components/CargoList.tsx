@@ -62,7 +62,15 @@ function mapActionLabel(action: string): string {
 
 function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
   const lastUpdate = s.latest_event_time ?? s.created_at;
-  const status = deriveStatusFromNextAction(s.next_required_action);
+  const latestEvent = (s.latest_event || '').toUpperCase();
+  const completedEvents = new Set([
+    'WAREHOUSE_ARRIVAL',
+    'CARGO_REACHED_WAREHOUSE',
+    'COMPLETE',
+  ]);
+  const status = completedEvents.has(latestEvent)
+    ? 'COMPLETE'
+    : deriveStatusFromNextAction(s.next_required_action);
   return {
     id: s.cargo_id,
     referenceNumber: s.cargo_id,
