@@ -27,6 +27,13 @@ type CargoRow = {
   nextRequiredAction: string;
   status: CargoStatus;
   statusLabel: string;
+  containers: Array<{
+    cargoId: string;
+    status: CargoStatus;
+    statusLabel: string;
+    lastUpdate: string;
+    nextRequiredAction: string;
+  }>;
 };
 
 interface CargoListProps {
@@ -72,8 +79,8 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
     ? 'COMPLETE'
     : deriveStatusFromNextAction(s.next_required_action);
   return {
-    id: s.cargo_id,
-    referenceNumber: s.cargo_id,
+    id: s.bill_of_lading,
+    referenceNumber: s.bill_of_lading,
     origin: s.origin,
     destination: s.destination,
     vessel: s.vessel,
@@ -83,11 +90,27 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
     nextRequiredAction: s.next_required_action,
     status,
     statusLabel: statusConfig[status].label,
+    containers: s.containers.map((c) => {
+      const containerStatus = deriveStatusFromNextAction(c.next_required_action);
+      return {
+        cargoId: c.cargo_id,
+        status: containerStatus,
+        statusLabel: statusConfig[containerStatus].label,
+        lastUpdate: c.latest_event_time ?? c.created_at,
+        nextRequiredAction: c.next_required_action,
+      };
+    }),
   };
 }
 
 export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: CargoListProps) {
   const [search, setSearch] = useState('');
+
+  const formatRelativeTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return timestamp;
+    return date.toLocaleString();
+  };
   const [clientContext, setClientContext] = useState<ClientMeResponse | null>(null);
 
   useEffect(() => {
@@ -106,6 +129,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   }, []);
 
   const [rows, setRows] = useState<CargoRow[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
 
@@ -203,6 +227,14 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     });
   }, [rows, search]);
 
+  const toggleGroup = (billOfLading: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(billOfLading) ? next.delete(billOfLading) : next.add(billOfLading);
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="bg-[#0F1117] text-white border-b border-border">
@@ -296,38 +328,77 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((cargo) => (
-                <TableRow
-                  key={cargo.id}
-                  onClick={() => onSelectCargo(cargo.id)}
-                  className="border-b border-border cursor-pointer hover:bg-muted/60"
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Package className="size-4 text-muted-foreground" />
-                      <span className="text-foreground">{cargo.referenceNumber}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-foreground">
-                      {(cargo.origin ?? 'Mombasa, KN')} → {(cargo.destination ?? 'Kigali, RW')}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-foreground">{cargo.vessel ?? 'MSC'}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1`}>
-                      {cargo.statusLabel}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-foreground">{cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="size-4" />
-                      <span>{cargo.lastUpdate}</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((cargo) => {
+                const open = expandedGroups.has(cargo.id);
+                return (
+                  <TableRow key={cargo.id} className="border-b border-border cursor-pointer hover:bg-muted/60">
+                    <TableCell onClick={() => toggleGroup(cargo.id)}>
+                      <div className="flex items-center gap-2">
+                        <Package className="size-4 text-muted-foreground" />
+                        <span className="text-foreground">{cargo.referenceNumber}</span>
+                        <span className="text-muted-foreground text-xs">({cargo.containers.length} containers)</span>
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={() => toggleGroup(cargo.id)}>
+                      <div className="text-foreground">
+                        {(cargo.origin ?? 'Mombasa, KN')} → {(cargo.destination ?? 'Kigali, RW')}
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={() => toggleGroup(cargo.id)} className="text-foreground">
+                      {cargo.vessel ?? 'MSC'}
+                    </TableCell>
+                    <TableCell onClick={() => toggleGroup(cargo.id)}>
+                      <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1`}>
+                        {cargo.statusLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell onClick={() => toggleGroup(cargo.id)} className="text-foreground">
+                      {cargo.eta ?? cargo.expectedArrivalDate ?? '—'}
+                    </TableCell>
+                    <TableCell onClick={() => toggleGroup(cargo.id)}>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="size-4" />
+                        <span>{formatRelativeTime(cargo.lastUpdate)}</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+
+              {filtered.map((cargo) => {
+                const open = expandedGroups.has(cargo.id);
+                if (!open) return null;
+                return cargo.containers.map((container) => (
+                  <TableRow
+                    key={`${cargo.id}-${container.cargoId}`}
+                    onClick={() => onSelectCargo(container.cargoId)}
+                    className="border-b border-border cursor-pointer bg-muted/20"
+                  >
+                    <TableCell className="pl-10">
+                      <div className="flex items-center gap-2">
+                        <Container className="size-4 text-muted-foreground" />
+                        <span className="text-foreground">{container.cargoId}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-muted-foreground">Container timeline</div>
+                    </TableCell>
+                    <TableCell className="text-foreground">—</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusConfig[container.status].color} rounded-sm px-2 py-1`}>
+                        {container.statusLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-foreground">—</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="size-4" />
+                        <span>{formatRelativeTime(container.lastUpdate)}</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ));
+              })}
 
               {filtered.length === 0 && (
                 <TableRow className="hover:bg-transparent">
@@ -347,7 +418,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           </Table>
         </div>
 
-        <div className="mt-4 text-muted-foreground">Showing {filtered.length} shipments</div>
+        <div className="mt-4 text-muted-foreground">Showing {filtered.length} groups</div>
       </div>
     </div>
   );

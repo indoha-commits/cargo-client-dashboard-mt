@@ -26,20 +26,16 @@ export async function insertClientDocument(input: InsertClientDocumentInput): Pr
 }
 
 export type ClientShipmentRow = {
-  cargo_id: string;
-
+  bill_of_lading: string;
   route: string | null;
   vessel: string | null;
   origin: string | null;
   destination: string | null;
-
   expected_arrival_date: string | null;
   eta: string | null;
-
   latest_event: string | null;
   latest_event_time: string | null;
   next_required_action: string;
-
   documents: {
     total_required: number;
     total_submitted: number;
@@ -47,8 +43,23 @@ export type ClientShipmentRow = {
     all_submitted: boolean;
     all_verified: boolean;
   };
-
   created_at: string;
+  bill_of_lading_group: string;
+  containers: Array<{
+    cargo_id: string;
+    cargo_uuid: string;
+    latest_event: string | null;
+    latest_event_time: string | null;
+    next_required_action: string;
+    documents: {
+      total_required: number;
+      total_submitted: number;
+      total_verified: number;
+      all_submitted: boolean;
+      all_verified: boolean;
+    };
+    created_at: string;
+  }>;
 };
 
 export type ClientMeResponse = {
