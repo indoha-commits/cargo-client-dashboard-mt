@@ -838,6 +838,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-foreground mb-1">Shipment Reference: {cargoId}</h2>
+              {detail?.cargo.bill_of_lading_group && (
+                <p className="text-muted-foreground">Bill of Lading Group: {detail.cargo.bill_of_lading_group}</p>
+              )}
               <p className="text-muted-foreground">
                 Route:{' '}
                 {detail?.cargo.route ??

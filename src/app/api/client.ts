@@ -93,6 +93,8 @@ export type ClientCargoDetail = {
     route?: string | null;
     vessel?: string | null;
     category?: string | null;
+    bill_of_lading?: string | null;
+    bill_of_lading_group?: string | null;
   };
   projection: {
     next_required_action: string;
