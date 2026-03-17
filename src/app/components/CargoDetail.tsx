@@ -352,6 +352,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const workersEnabled = (import.meta.env.VITE_WORKERS_ENABLED ?? 'true') === 'true';
 
   const [detail, setDetail] = useState<ClientCargoDetail | null>(null);
+  const [activeCargoId, setActiveCargoId] = useState(cargoId);
   const [approvals, setApprovals] = useState<CargoApproval[]>([]);
   const [approvalsError, setApprovalsError] = useState<string | null>(null);
   const [approvalsBusyId, setApprovalsBusyId] = useState<string | null>(null);
@@ -361,6 +362,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const [uploadReplaceDocId, setUploadReplaceDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const [selectedContainerId, setSelectedContainerId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch initial cargo detail and approvals
@@ -372,12 +374,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     }
 
     setLoading(true);
-    getClientCargoDetail(cargoId)
+    getClientCargoDetail(activeCargoId)
       .then((d) => {
         if (cancelled) return;
         setDetail(d);
         setApprovalsError(null);
-        return getClientCargoApprovals(cargoId)
+        return getClientCargoApprovals(activeCargoId)
           .then((approvalsRes) => {
             if (cancelled) return;
             setApprovals(approvalsRes.approvals);
@@ -402,7 +404,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return () => {
       cancelled = true;
     };
-  }, [cargoId, workersEnabled]);
+  }, [activeCargoId, workersEnabled]);
 
   // Real-time subscriptions for cargo updates
   useEffect(() => {
@@ -411,10 +413,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     const supabase = getSupabase();
 
     const refreshCargoData = () => {
-      getClientCargoDetail(cargoId)
+      getClientCargoDetail(activeCargoId)
         .then((d) => {
           setDetail(d);
-          return getClientCargoApprovals(cargoId);
+          return getClientCargoApprovals(activeCargoId);
         })
         .then((approvalsRes) => {
           setApprovals(approvalsRes.approvals);
@@ -426,14 +428,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo_events table (timeline updates)
     const eventsSubscription = supabase
-      .channel(`cargo_events_${cargoId}`)
+      .channel(`cargo_events_${activeCargoId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'cargo_events',
-          filter: `cargo_id=eq.${cargoId}`,
+          filter: `cargo_id=eq.${activeCargoId}`,
         },
         () => {
           refreshCargoData();
@@ -443,14 +445,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to client_documents table (document uploads/updates)
     const documentsSubscription = supabase
-      .channel(`client_documents_${cargoId}`)
+      .channel(`client_documents_${activeCargoId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'client_documents',
-          filter: `cargo_id=eq.${cargoId}`,
+          filter: `cargo_id=eq.${activeCargoId}`,
         },
         () => {
           refreshCargoData();
@@ -460,14 +462,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo_client_approvals table (approval status changes)
     const approvalsSubscription = supabase
-      .channel(`cargo_approvals_${cargoId}`)
+      .channel(`cargo_approvals_${activeCargoId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'cargo_client_approvals',
-          filter: `cargo_id=eq.${cargoId}`,
+          filter: `cargo_id=eq.${activeCargoId}`,
         },
         () => {
           refreshCargoData();
@@ -477,14 +479,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo table (general cargo updates)
     const cargoSubscription = supabase
-      .channel(`cargo_${cargoId}`)
+      .channel(`cargo_${activeCargoId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'cargo',
-          filter: `id=eq.${cargoId}`,
+          filter: `id=eq.${activeCargoId}`,
         },
         () => {
           refreshCargoData();
@@ -498,7 +500,15 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       supabase.removeChannel(approvalsSubscription);
       supabase.removeChannel(cargoSubscription);
     };
-  }, [cargoId, workersEnabled]);
+  }, [activeCargoId, workersEnabled]);
+
+  useEffect(() => {
+    if (selectedContainerId) {
+      setActiveCargoId(selectedContainerId);
+    } else {
+      setActiveCargoId(cargoId);
+    }
+  }, [selectedContainerId, cargoId]);
 
   const nextRequiredAction = detail?.projection?.next_required_action ?? 'CLIENT_UPLOAD_REQUIRED_DOCUMENTS';
   const nextRequiredActionLabel = nextRequiredAction
@@ -579,6 +589,28 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return derived.length ? derived : [];
   }, [detail, approvals]);
 
+  const containers = useMemo(() => {
+    if (!detail?.cargo.bill_of_lading_group) return [] as Array<{
+      cargo_id: string;
+      latest_event: string | null;
+      latest_event_time: string | null;
+      next_required_action: string;
+    }>;
+    return detail.shipments?.find((s) => s.bill_of_lading === detail.cargo.bill_of_lading_group)?.containers ?? [];
+  }, [detail]);
+
+  useEffect(() => {
+    if (!selectedContainerId && containers.length > 0) {
+      setSelectedContainerId(containers[0].cargo_id);
+    }
+  }, [containers, selectedContainerId]);
+
+  const formatContainerStatus = (action: string) =>
+    action
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/(^|\s)\S/g, (s) => s.toUpperCase());
+
   const handleApprovalApprove = async (approvalId: string) => {
     try {
       setApprovalsBusyId(approvalId);
@@ -630,22 +662,22 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       setUploadError(null);
 
       const { path } = await uploadClientDocumentFile({
-        cargoId,
+        cargoId: activeCargoId,
         documentType: uploadDocType,
         file,
       });
 
       // For private buckets, the backend stores the storage object path (not a public URL)
       await insertClientDocument({
-        cargoId,
+        cargoId: activeCargoId,
         documentType: uploadDocType,
         driveUrl: path,
         replaceDocumentId: uploadReplaceDocId ?? undefined,
       });
 
       const [refreshed, approvalsRes] = await Promise.all([
-        getClientCargoDetail(cargoId),
-        getClientCargoApprovals(cargoId),
+        getClientCargoDetail(activeCargoId),
+        getClientCargoApprovals(activeCargoId),
       ]);
       setDetail(refreshed);
       setApprovals(approvalsRes.approvals);
@@ -860,16 +892,21 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-foreground">Required Documents</h3>
+                  <h3 className="text-foreground">
+                    {detail?.cargo.bill_of_lading_group ? 'Group Required Documents' : 'Required Documents'}
+                  </h3>
                   <div className="text-xs text-muted-foreground mt-1">
                     {detail?.cargo.category
                       ? `Category: ${formatCategoryLabel(detail.cargo.category)}`
                       : 'Category not set'}
                     {' · '}Documents last updated: {formatFriendlyDate(documentsLastUpdated)}
+                    {detail?.cargo.bill_of_lading_group ? ' · Uploading here applies to all containers in this group.' : ''}
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground text-right">
-                  {uploadProgress.total > 0 ? `${uploadProgress.verified}/${uploadProgress.total} verified` : '—'}
+                  {uploadProgress.total > 0
+                    ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
+                    : '—'}
                 </div>
               </div>
               <div className="space-y-3">
@@ -1081,6 +1118,38 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                   {timelineExpanded ? 'Collapse' : 'Expand Timeline'}
                 </Button>
               </div>
+
+              {containers.length > 0 && (
+                <div className="mb-4 rounded-sm border border-border bg-muted/20">
+                  <div className="px-4 py-3 border-b border-border text-sm text-muted-foreground">
+                    Containers in this group
+                  </div>
+                  <div className="divide-y divide-border">
+                    {containers.map((container) => (
+                      <button
+                        key={container.cargo_id}
+                        type="button"
+                        onClick={() => setSelectedContainerId(container.cargo_id)}
+                        className={`w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/40 transition-colors ${
+                          selectedContainerId === container.cargo_id ? 'bg-muted/30' : ''
+                        }`}
+                      >
+                        <div>
+                          <div className="text-foreground text-sm">{container.cargo_id}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatContainerStatus(container.next_required_action)}
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {container.latest_event_time
+                            ? formatFriendlyDate(container.latest_event_time)
+                            : 'No updates yet'}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {timelineExpanded && (
                 <div className="space-y-4">
                   {timelineEvents.map((event, index, arr) => (
