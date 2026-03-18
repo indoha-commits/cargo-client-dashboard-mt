@@ -249,6 +249,17 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     }
   };
 
+  const latestRequest = validationRequests[0];
+  const requestStep = requestStatus === 'uploading'
+    ? 'uploading'
+    : latestRequest?.status === 'rejected'
+      ? 'rejected'
+      : latestRequest?.status === 'approved'
+        ? 'approved'
+        : latestRequest?.status === 'pending'
+          ? 'pending'
+          : 'idle';
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -304,36 +315,63 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-foreground mb-1">Active Shipments</h2>
-            <div className="text-sm text-muted-foreground">
-              Upload a Bill of Lading to start a new clearance request.
+        <div className="mb-6">
+          <div className="bg-card border border-border rounded-sm p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-foreground mb-1">New Clearance Request</h2>
+                <div className="text-sm text-muted-foreground">
+                  Upload your Bill of Lading to start review. Ops will approve or reject it before cargo creation.
+                </div>
+              </div>
+              <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-background text-sm cursor-pointer">
+                <Upload className="size-4 text-muted-foreground" />
+                <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    if (file) {
+                      setRequestUpload({ file });
+                      setRequestStatus('idle');
+                      setRequestError(null);
+                      handleRequestSubmit();
+                    }
+                  }}
+                />
+              </label>
             </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-card text-sm cursor-pointer">
-              <Upload className="size-4 text-muted-foreground" />
-              <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
-              <input
-                type="file"
-                accept="application/pdf,image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  if (file) {
-                    setRequestUpload({ file });
-                    setRequestStatus('idle');
-                    setRequestError(null);
-                    handleRequestSubmit();
-                  }
-                }}
-              />
-            </label>
-            <div className="text-xs text-muted-foreground">
-              {requestStatus === 'uploading' && 'Submitting…'}
-              {requestStatus === 'submitted' && 'Request submitted for validation.'}
-              {requestStatus === 'error' && requestError}
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {[
+                { key: 'uploading', label: 'Upload' },
+                { key: 'pending', label: 'Pending review' },
+                { key: 'approved', label: 'Approved' },
+              ].map((step, index) => {
+                const active = requestStep === step.key || (requestStep === 'pending' && step.key === 'pending') || (requestStep === 'approved' && step.key === 'approved');
+                return (
+                  <div
+                    key={step.key}
+                    className={`rounded-sm border px-3 py-2 text-xs ${
+                      active ? 'border-primary text-primary' : 'border-border text-muted-foreground'
+                    }`}
+                  >
+                    <div className="text-[11px] uppercase tracking-wide">Step {index + 1}</div>
+                    <div className="text-sm font-medium mt-1">{step.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 text-xs text-muted-foreground">
+              {requestStep === 'uploading' && 'Uploading your Bill of Lading…'}
+              {requestStep === 'pending' && 'Your request is pending review by Ops.'}
+              {requestStep === 'approved' && 'Request approved. Ops can now create your cargo.'}
+              {requestStep === 'rejected' && latestRequest?.rejection_reason && `Rejected: ${latestRequest.rejection_reason}`}
+              {requestStep === 'idle' && 'Select a file to begin.'}
+              {requestStatus === 'error' && requestError && ` ${requestError}`}
             </div>
           </div>
         </div>
