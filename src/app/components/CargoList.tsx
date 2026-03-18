@@ -1,4 +1,4 @@
-import { Search, Ship, Package, Clock, LogOut, Container, Upload, CheckCircle2 } from 'lucide-react';
+import { Search, Ship, Package, Clock, LogOut, Container, Upload, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   getClientMe,
@@ -41,6 +41,7 @@ type CargoRow = {
   completionLabel: string;
   showGroupIcon: boolean;
   isGroupRow: boolean;
+  groupKey: string;
 };
 
 interface CargoListProps {
@@ -97,6 +98,7 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
     completionLabel,
     showGroupIcon: true,
     isGroupRow: true,
+    groupKey: s.bill_of_lading,
   };
 
   const containerRows = s.containers.map((container) => {
@@ -117,6 +119,7 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
       completionLabel: '',
       showGroupIcon: false,
       isGroupRow: false,
+      groupKey: s.bill_of_lading,
     };
   });
 
@@ -153,6 +156,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   }, []);
 
   const [rows, setRows] = useState<CargoRow[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
 
@@ -282,16 +286,31 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => {
-      return (
-        r.referenceNumber.toLowerCase().includes(q) ||
-        (r.vessel ?? '').toLowerCase().includes(q) ||
-        (r.origin ?? '').toLowerCase().includes(q) ||
-        (r.destination ?? '').toLowerCase().includes(q)
-      );
+    const base = q
+      ? rows.filter((r) => {
+          return (
+            r.referenceNumber.toLowerCase().includes(q) ||
+            (r.vessel ?? '').toLowerCase().includes(q) ||
+            (r.origin ?? '').toLowerCase().includes(q) ||
+            (r.destination ?? '').toLowerCase().includes(q)
+          );
+        })
+      : rows;
+
+    return base.filter((row) => row.isGroupRow || expandedGroups.has(row.groupKey));
+  }, [rows, search, expandedGroups]);
+
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
     });
-  }, [rows, search]);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -488,7 +507,9 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                 <TableRow
                   key={cargo.id}
                   onClick={() => {
-                    if (!cargo.isGroupRow) {
+                    if (cargo.isGroupRow) {
+                      toggleGroup(cargo.groupKey);
+                    } else {
                       onSelectCargo(cargo.referenceNumber);
                     }
                   }}
@@ -502,6 +523,11 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                         <Container className="size-4 text-muted-foreground" />
                       )}
                       <span className="text-foreground">{cargo.referenceNumber}</span>
+                      {cargo.isGroupRow && (
+                        <span className="text-muted-foreground">
+                          {expandedGroups.has(cargo.groupKey) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
