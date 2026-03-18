@@ -1,7 +1,16 @@
-import { Search, Ship, Package, Clock, LogOut, Container } from 'lucide-react';
+import { Search, Ship, Package, Clock, LogOut, Container, Upload } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { getClientMe, type ClientMeResponse, getClientShipments, type ClientShipmentRow, getClientStats, type ClientStats } from '../api/client';
+import {
+  getClientMe,
+  type ClientMeResponse,
+  getClientShipments,
+  type ClientShipmentRow,
+  getClientStats,
+  type ClientStats,
+  createClientValidationRequest,
+} from '../api/client';
 import { getSupabase } from '../auth/supabase';
+import { uploadClientRequestFile } from '../auth/storage';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import {
@@ -105,6 +114,9 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
 
 export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: CargoListProps) {
   const [search, setSearch] = useState('');
+  const [requestUpload, setRequestUpload] = useState<{ file: File } | null>(null);
+  const [requestStatus, setRequestStatus] = useState<'idle' | 'uploading' | 'submitted' | 'error'>('idle');
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   const formatRelativeTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -214,6 +226,22 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     };
   }, []);
 
+  const handleRequestSubmit = async () => {
+    if (!requestUpload?.file) return;
+    setRequestStatus('uploading');
+    setRequestError(null);
+    try {
+      const { path } = await uploadClientRequestFile({ file: requestUpload.file });
+      await createClientValidationRequest({ filePath: path, fileName: requestUpload.file.name });
+      setRequestStatus('submitted');
+      setRequestUpload(null);
+      window.setTimeout(() => setRequestStatus('idle'), 3000);
+    } catch (e) {
+      setRequestStatus('error');
+      setRequestError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -269,8 +297,46 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       </header>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6">
-          <h2 className="text-foreground mb-1">Active Shipments</h2>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-foreground mb-1">Active Shipments</h2>
+            <div className="text-sm text-muted-foreground">
+              Upload a Bill of Lading to start a new clearance request.
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-card text-sm cursor-pointer">
+              <Upload className="size-4 text-muted-foreground" />
+              <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file) {
+                    setRequestUpload({ file });
+                    setRequestStatus('idle');
+                    setRequestError(null);
+                  }
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={handleRequestSubmit}
+              disabled={!requestUpload?.file || requestStatus === 'uploading'}
+              className="px-4 py-2 rounded-sm text-sm border border-primary text-primary hover:bg-primary/10 disabled:opacity-60"
+            >
+              {requestStatus === 'uploading' ? 'Submitting…' : 'Submit Request'}
+            </button>
+          </div>
+          {requestStatus === 'submitted' && (
+            <div className="text-sm text-green-600">Request submitted for validation.</div>
+          )}
+          {requestStatus === 'error' && requestError && (
+            <div className="text-sm text-red-600">{requestError}</div>
+          )}
         </div>
 
         {/* Stats Cards */}

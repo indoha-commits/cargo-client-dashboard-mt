@@ -186,6 +186,23 @@ export async function createClientDocumentUploadUrl(input: {
   );
 }
 
+export async function createClientRequestUploadUrl(input: { fileName: string }): Promise<{ path: string; signed_url: string; expires_in: number }> {
+  return await fetchJson<{ path: string; signed_url: string; expires_in: number }>(
+    `/client/requests/upload-url`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ file_name: input.fileName }),
+    }
+  );
+}
+
+export async function createClientValidationRequest(input: { filePath: string; fileName?: string }): Promise<{ request: any }> {
+  return await fetchJson<{ request: any }>(`/client/requests`, {
+    method: 'POST',
+    body: JSON.stringify({ file_path: input.filePath, file_name: input.fileName }),
+  });
+}
+
 export async function approveClientCargoApproval(approvalId: string): Promise<{ approval: CargoApproval }> {
   return await fetchJson<{ approval: CargoApproval }>(
     `/client/approvals/${encodeURIComponent(approvalId)}/approve`,
