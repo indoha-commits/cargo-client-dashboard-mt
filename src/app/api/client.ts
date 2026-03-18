@@ -235,6 +235,7 @@ export type ClientStats = {
   client_id: string;
   total_cargo: number;
   total_containers: number;
+  completed_shipments: number;
 };
 
 export async function getClientStats(): Promise<ClientStats> {

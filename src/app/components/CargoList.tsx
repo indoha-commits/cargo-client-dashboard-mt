@@ -1,4 +1,4 @@
-import { Search, Ship, Package, Clock, LogOut, Container, Upload } from 'lucide-react';
+import { Search, Ship, Package, Clock, LogOut, Container, Upload, CheckCircle2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   getClientMe,
@@ -38,13 +38,8 @@ type CargoRow = {
   nextRequiredAction: string;
   status: CargoStatus;
   statusLabel: string;
-  containers: Array<{
-    cargoId: string;
-    status: CargoStatus;
-    statusLabel: string;
-    lastUpdate: string;
-    nextRequiredAction: string;
-  }>;
+  completionLabel: string;
+  showGroupIcon: boolean;
 };
 
 interface CargoListProps {
@@ -78,40 +73,31 @@ function mapActionLabel(action: string): string {
     .replace(/(^|\s)\S/g, (s) => s.toUpperCase());
 }
 
-function mapShipmentToRow(s: ClientShipmentRow): CargoRow {
-  const lastUpdate = s.latest_event_time ?? s.created_at;
-  const latestEvent = (s.latest_event || '').toUpperCase();
-  const completedEvents = new Set([
-    'WAREHOUSE_ARRIVAL',
-    'CARGO_REACHED_WAREHOUSE',
-    'COMPLETE',
-  ]);
-  const status = completedEvents.has(latestEvent)
-    ? 'COMPLETE'
-    : deriveStatusFromNextAction(s.next_required_action);
-  return {
-    id: s.bill_of_lading,
-    referenceNumber: s.bill_of_lading,
-    origin: s.origin,
-    destination: s.destination,
-    vessel: s.vessel,
-    eta: s.eta,
-    expectedArrivalDate: s.expected_arrival_date,
-    lastUpdate,
-    nextRequiredAction: s.next_required_action,
-    status,
-    statusLabel: statusConfig[status].label,
-    containers: s.containers.map((c) => {
-      const containerStatus = deriveStatusFromNextAction(c.next_required_action);
-      return {
-        cargoId: c.cargo_id,
-        status: containerStatus,
-        statusLabel: statusConfig[containerStatus].label,
-        lastUpdate: c.latest_event_time ?? c.created_at,
-        nextRequiredAction: c.next_required_action,
-      };
-    }),
-  };
+function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
+  const isCompleted = (action: string) => action === 'CARGO_ARRIVED_TO_YOUR_LOCATION' || action === 'COMPLETE';
+  const totalContainers = s.containers.length;
+  const completedCount = s.containers.filter((c) => isCompleted(c.next_required_action)).length;
+  const completionLabel = `${completedCount}/${totalContainers} containers complete`;
+
+  return s.containers.map((container, index) => {
+    const lastUpdate = container.latest_event_time ?? container.created_at;
+    const status = deriveStatusFromNextAction(container.next_required_action);
+    return {
+      id: container.cargo_id,
+      referenceNumber: container.cargo_id,
+      origin: s.origin,
+      destination: s.destination,
+      vessel: s.vessel,
+      eta: s.eta,
+      expectedArrivalDate: s.expected_arrival_date,
+      lastUpdate,
+      nextRequiredAction: container.next_required_action,
+      status,
+      statusLabel: statusConfig[status].label,
+      completionLabel: index === 0 ? completionLabel : '',
+      showGroupIcon: index === 0,
+    };
+  });
 }
 
 export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: CargoListProps) {
@@ -144,7 +130,6 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   }, []);
 
   const [rows, setRows] = useState<CargoRow[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stats, setStats] = useState<ClientStats | null>(null);
 
@@ -160,7 +145,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     ])
       .then(([shipmentsRes, statsRes, requestsRes]) => {
         if (cancelled) return;
-        setRows(shipmentsRes.shipments.map(mapShipmentToRow));
+        setRows(shipmentsRes.shipments.flatMap(mapShipmentToRow));
         if (statsRes) setStats(statsRes);
         const sortedRequests = (requestsRes.requests ?? []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
         setValidationRequests(sortedRequests);
@@ -194,7 +179,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           // Refetch shipments when any cargo changes
           getClientShipments()
             .then((res) => {
-              setRows(res.shipments.map(mapShipmentToRow));
+              setRows(res.shipments.flatMap(mapShipmentToRow));
             })
             .catch((e) => {
               console.error('Failed to refresh shipments:', e);
@@ -217,7 +202,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           // Refetch shipments when new events are added
           getClientShipments()
             .then((res) => {
-              setRows(res.shipments.map(mapShipmentToRow));
+              setRows(res.shipments.flatMap(mapShipmentToRow));
             })
             .catch((e) => {
               console.error('Failed to refresh shipments:', e);
@@ -284,14 +269,6 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       );
     });
   }, [rows, search]);
-
-  const toggleGroup = (billOfLading: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      next.has(billOfLading) ? next.delete(billOfLading) : next.add(billOfLading);
-      return next;
-    });
-  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -396,7 +373,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               {requestStep === 'pending' && (
                 `Your request is pending review by Ops. ${latestRequest?.file_name ?? 'Bill of Lading'} · Uploaded ${latestRequest ? new Date(latestRequest.created_at).toLocaleString() : ''}`
               )}
-              {requestStep === 'approved' && 'Request approved. Ops can now create your cargo.'}
+              {requestStep === 'approved' && 'Cargo creation completed. Please re-upload for another shipment request.'}
               {requestStep === 'rejected' && latestRequest?.rejection_reason && `Rejected: ${latestRequest.rejection_reason}`}
               {requestStep === 'idle' && 'Select a file to begin.'}
               {requestStatus === 'error' && requestError && ` ${requestError}`}
@@ -416,7 +393,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-card border border-border rounded-sm p-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-500/10 rounded-lg">
@@ -431,8 +408,23 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
             
             <div className="bg-card border border-border rounded-sm p-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-500/10 rounded-lg">
-                  <Container className="size-6 text-green-500" />
+                <div className="p-3 bg-emerald-500/10 rounded-lg">
+                  <CheckCircle2 className="size-6 text-emerald-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.completed_shipments}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Completed Shipments
+                    <span className="ml-2 text-xs opacity-70">(all containers complete)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-sm p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-500/10 rounded-lg">
+                  <Package className="size-6 text-purple-500" />
                 </div>
                 <div>
                   <div className="text-2xl font-semibold text-foreground">{stats.total_containers}</div>
@@ -460,7 +452,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableHead className="text-foreground">Reference</TableHead>
+                <TableHead className="text-foreground">Container</TableHead>
                 <TableHead className="text-foreground">Route</TableHead>
                 <TableHead className="text-foreground">Vessel</TableHead>
                 <TableHead className="text-foreground">Status</TableHead>
@@ -469,77 +461,47 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((cargo) => {
-                const open = expandedGroups.has(cargo.id);
-                return (
-                  <TableRow key={cargo.id} className="border-b border-border cursor-pointer hover:bg-muted/60">
-                    <TableCell onClick={() => toggleGroup(cargo.id)}>
-                      <div className="flex items-center gap-2">
+              {filtered.map((cargo) => (
+                <TableRow
+                  key={cargo.id}
+                  onClick={() => onSelectCargo(cargo.referenceNumber)}
+                  className={`border-b border-border cursor-pointer hover:bg-muted/60 ${cargo.showGroupIcon ? 'border-t-2 border-primary/40' : ''}`}
+                >
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {cargo.showGroupIcon ? (
                         <Package className="size-4 text-muted-foreground" />
-                        <span className="text-foreground">{cargo.referenceNumber}</span>
-                        <span className="text-muted-foreground text-xs">({cargo.containers.length} containers)</span>
-                      </div>
-                    </TableCell>
-                    <TableCell onClick={() => toggleGroup(cargo.id)}>
-                      <div className="text-foreground">
-                        {(cargo.origin ?? 'Mombasa, KN')} → {(cargo.destination ?? 'Kigali, RW')}
-                      </div>
-                    </TableCell>
-                    <TableCell onClick={() => toggleGroup(cargo.id)} className="text-foreground">
-                      {cargo.vessel ?? 'MSC'}
-                    </TableCell>
-                    <TableCell onClick={() => toggleGroup(cargo.id)}>
-                      <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1`}>
+                      ) : (
+                        <Container className="size-4 text-muted-foreground" />
+                      )}
+                      <span className="text-foreground">{cargo.referenceNumber}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-foreground">
+                      {(cargo.origin ?? 'Mombasa, KN')} → {(cargo.destination ?? 'Kigali, RW')}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-foreground">{cargo.vessel ?? 'MSC'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1 w-fit`}>
                         {cargo.statusLabel}
                       </Badge>
-                    </TableCell>
-                    <TableCell onClick={() => toggleGroup(cargo.id)} className="text-foreground">
-                      {cargo.eta ?? cargo.expectedArrivalDate ?? '—'}
-                    </TableCell>
-                    <TableCell onClick={() => toggleGroup(cargo.id)}>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="size-4" />
-                        <span>{formatRelativeTime(cargo.lastUpdate)}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-
-              {filtered.map((cargo) => {
-                const open = expandedGroups.has(cargo.id);
-                if (!open) return null;
-                return cargo.containers.map((container) => (
-                  <TableRow
-                    key={`${cargo.id}-${container.cargoId}`}
-                    onClick={() => onSelectCargo(container.cargoId)}
-                    className="border-b border-border cursor-pointer bg-muted/20"
-                  >
-                    <TableCell className="pl-10">
-                      <div className="flex items-center gap-2">
-                        <Container className="size-4 text-muted-foreground" />
-                        <span className="text-foreground">{container.cargoId}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-muted-foreground">Container timeline</div>
-                    </TableCell>
-                    <TableCell className="text-foreground">—</TableCell>
-                    <TableCell>
-                      <Badge className={`${statusConfig[container.status].color} rounded-sm px-2 py-1`}>
-                        {container.statusLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-foreground">—</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="size-4" />
-                        <span>{formatRelativeTime(container.lastUpdate)}</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ));
-              })}
+                      {cargo.completionLabel && (
+                        <span className="text-xs text-muted-foreground">{cargo.completionLabel}</span>
+                      )
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-foreground">{cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="size-4" />
+                      <span>{formatRelativeTime(cargo.lastUpdate)}</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
 
               {filtered.length === 0 && (
                 <TableRow className="hover:bg-transparent">
@@ -559,7 +521,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           </Table>
         </div>
 
-        <div className="mt-4 text-muted-foreground">Showing {filtered.length} groups</div>
+        <div className="mt-4 text-muted-foreground">Showing {filtered.length} containers</div>
       </div>
     </div>
   );
