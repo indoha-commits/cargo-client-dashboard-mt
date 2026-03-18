@@ -541,7 +541,14 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                       <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1 w-fit`}>
                         {cargo.statusLabel}
                       </Badge>
-                      {cargo.completionLabel && (
+                      {cargo.isGroupRow && cargo.completionLabel && (
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5">
+                            {cargo.completionLabel}
+                          </span>
+                        </div>
+                      )}
+                      {!cargo.isGroupRow && cargo.completionLabel && (
                         <span className="text-xs text-muted-foreground">{cargo.completionLabel}</span>
                       )}
                     </div>
