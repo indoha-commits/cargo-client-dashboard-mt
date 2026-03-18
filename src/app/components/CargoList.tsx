@@ -400,19 +400,13 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           </div>
         </div>
 
-        {validationRequests.some((r) => r.status === 'rejected') && (
+        {validationRequests[0]?.status === 'rejected' && (
           <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             Your Bill of Lading request was rejected. Please review the reason below and upload a corrected file.
-            <ul className="mt-2 list-disc pl-5 space-y-1">
-              {validationRequests
-                .filter((r) => r.status === 'rejected')
-                .slice(0, 3)
-                .map((r) => (
-                  <li key={r.id}>
-                    {r.file_name ?? 'Bill of Lading'} — {r.rejection_reason ?? 'No reason provided'}
-                  </li>
-                ))}
-            </ul>
+            <div className="mt-2">
+              {validationRequests[0].file_name ?? 'Bill of Lading'} — {validationRequests[0].rejection_reason ?? 'No reason provided'}
+              {' · '}Uploaded {new Date(validationRequests[0].created_at).toLocaleString()}
+            </div>
           </div>
         )}
 
