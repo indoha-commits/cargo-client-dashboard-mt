@@ -412,7 +412,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   <CheckCircle2 className="size-6 text-emerald-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.completed_shipments}</div>
+                  <div className="text-2xl font-semibold text-foreground">{stats.completed_shipments ?? 0}</div>
                   <div className="text-sm text-muted-foreground">
                     Completed Shipments
                     <span className="ml-2 text-xs opacity-70">(all containers complete)</span>
@@ -490,7 +490,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                       </Badge>
                       {cargo.completionLabel && (
                         <span className="text-xs text-muted-foreground">{cargo.completionLabel}</span>
-                      )
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground">{cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</TableCell>
