@@ -393,7 +393,9 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
 
             <div className="mt-4 text-xs text-muted-foreground">
               {requestStep === 'uploading' && 'Uploading your Bill of Lading…'}
-              {requestStep === 'pending' && 'Your request is pending review by Ops.'}
+              {requestStep === 'pending' && (
+                `Your request is pending review by Ops. ${latestRequest?.file_name ?? 'Bill of Lading'} · Uploaded ${latestRequest ? new Date(latestRequest.created_at).toLocaleString() : ''}`
+              )}
               {requestStep === 'approved' && 'Request approved. Ops can now create your cargo.'}
               {requestStep === 'rejected' && latestRequest?.rejection_reason && `Rejected: ${latestRequest.rejection_reason}`}
               {requestStep === 'idle' && 'Select a file to begin.'}
