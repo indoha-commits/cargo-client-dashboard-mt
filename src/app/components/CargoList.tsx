@@ -260,6 +260,16 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           ? 'pending'
           : 'idle';
 
+  const stepIndex = requestStep === 'approved'
+    ? 2
+    : requestStep === 'pending'
+      ? 1
+      : requestStep === 'uploading'
+        ? 0
+        : requestStep === 'rejected'
+          ? 1
+          : -1;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
@@ -324,24 +334,33 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   Upload your Bill of Lading to start review. Ops will approve or reject it before cargo creation.
                 </div>
               </div>
-              <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-background text-sm cursor-pointer">
-                <Upload className="size-4 text-muted-foreground" />
-                <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
-                <input
-                  type="file"
-                  accept="application/pdf,image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    if (file) {
-                      setRequestUpload({ file });
-                      setRequestStatus('idle');
-                      setRequestError(null);
-                      handleRequestSubmit();
-                    }
-                  }}
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-background text-sm cursor-pointer">
+                  <Upload className="size-4 text-muted-foreground" />
+                  <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      if (file) {
+                        setRequestUpload({ file });
+                        setRequestStatus('idle');
+                        setRequestError(null);
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRequestSubmit}
+                  disabled={!requestUpload?.file || requestStatus === 'uploading'}
+                  className="px-4 py-2 rounded-sm text-sm border border-primary text-primary hover:bg-primary/10 disabled:opacity-60"
+                >
+                  {requestStatus === 'uploading' ? 'Submitting…' : 'Submit Request'}
+                </button>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3 md:grid-cols-3">
@@ -350,14 +369,19 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                 { key: 'pending', label: 'Pending review' },
                 { key: 'approved', label: 'Approved' },
               ].map((step, index) => {
-                const active = requestStep === step.key || (requestStep === 'pending' && step.key === 'pending') || (requestStep === 'approved' && step.key === 'approved');
+                const active = index <= stepIndex && stepIndex >= 0 && step.key !== 'approved';
+                const approvedActive = requestStep === 'approved' && step.key === 'approved';
+                const rejectedActive = requestStep === 'rejected' && step.key === 'pending';
+                const isActive = approvedActive || rejectedActive || index <= stepIndex;
+                const color = approvedActive
+                  ? 'border-green-600 text-green-600'
+                  : rejectedActive
+                    ? 'border-red-500 text-red-500'
+                    : isActive
+                      ? 'border-primary text-primary'
+                      : 'border-border text-muted-foreground';
                 return (
-                  <div
-                    key={step.key}
-                    className={`rounded-sm border px-3 py-2 text-xs ${
-                      active ? 'border-primary text-primary' : 'border-border text-muted-foreground'
-                    }`}
-                  >
+                  <div key={step.key} className={`rounded-sm border px-3 py-2 text-xs ${color}`}>
                     <div className="text-[11px] uppercase tracking-wide">Step {index + 1}</div>
                     <div className="text-sm font-medium mt-1">{step.label}</div>
                   </div>
