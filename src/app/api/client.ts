@@ -203,6 +203,20 @@ export async function createClientValidationRequest(input: { filePath: string; f
   });
 }
 
+export type ClientValidationRequest = {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  file_name: string | null;
+  file_path: string;
+  created_at: string;
+  approved_at: string | null;
+  rejection_reason: string | null;
+};
+
+export async function getClientValidationRequests(): Promise<{ requests: ClientValidationRequest[] }> {
+  return await fetchJson<{ requests: ClientValidationRequest[] }>(`/client/requests`, { method: 'GET' });
+}
+
 export async function approveClientCargoApproval(approvalId: string): Promise<{ approval: CargoApproval }> {
   return await fetchJson<{ approval: CargoApproval }>(
     `/client/approvals/${encodeURIComponent(approvalId)}/approve`,

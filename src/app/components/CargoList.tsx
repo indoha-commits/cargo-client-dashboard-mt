@@ -8,6 +8,8 @@ import {
   getClientStats,
   type ClientStats,
   createClientValidationRequest,
+  getClientValidationRequests,
+  type ClientValidationRequest,
 } from '../api/client';
 import { getSupabase } from '../auth/supabase';
 import { uploadClientRequestFile } from '../auth/storage';
@@ -117,6 +119,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   const [requestUpload, setRequestUpload] = useState<{ file: File } | null>(null);
   const [requestStatus, setRequestStatus] = useState<'idle' | 'uploading' | 'submitted' | 'error'>('idle');
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [validationRequests, setValidationRequests] = useState<ClientValidationRequest[]>([]);
 
   const formatRelativeTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -153,11 +156,13 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
     Promise.all([
       getClientShipments(),
       getClientStats().catch(() => null), // Don't fail if stats unavailable
+      getClientValidationRequests().catch(() => ({ requests: [] })),
     ])
-      .then(([shipmentsRes, statsRes]) => {
+      .then(([shipmentsRes, statsRes, requestsRes]) => {
         if (cancelled) return;
         setRows(shipmentsRes.shipments.map(mapShipmentToRow));
         if (statsRes) setStats(statsRes);
+        setValidationRequests(requestsRes.requests ?? []);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -235,6 +240,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       await createClientValidationRequest({ filePath: path, fileName: requestUpload.file.name });
       setRequestStatus('submitted');
       setRequestUpload(null);
+      const requestsRes = await getClientValidationRequests();
+      setValidationRequests(requestsRes.requests ?? []);
       window.setTimeout(() => setRequestStatus('idle'), 3000);
     } catch (e) {
       setRequestStatus('error');
@@ -304,7 +311,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               Upload a Bill of Lading to start a new clearance request.
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-card text-sm cursor-pointer">
               <Upload className="size-4 text-muted-foreground" />
               <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
@@ -318,26 +325,34 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                     setRequestUpload({ file });
                     setRequestStatus('idle');
                     setRequestError(null);
+                    handleRequestSubmit();
                   }
                 }}
               />
             </label>
-            <button
-              type="button"
-              onClick={handleRequestSubmit}
-              disabled={!requestUpload?.file || requestStatus === 'uploading'}
-              className="px-4 py-2 rounded-sm text-sm border border-primary text-primary hover:bg-primary/10 disabled:opacity-60"
-            >
-              {requestStatus === 'uploading' ? 'Submitting…' : 'Submit Request'}
-            </button>
+            <div className="text-xs text-muted-foreground">
+              {requestStatus === 'uploading' && 'Submitting…'}
+              {requestStatus === 'submitted' && 'Request submitted for validation.'}
+              {requestStatus === 'error' && requestError}
+            </div>
           </div>
-          {requestStatus === 'submitted' && (
-            <div className="text-sm text-green-600">Request submitted for validation.</div>
-          )}
-          {requestStatus === 'error' && requestError && (
-            <div className="text-sm text-red-600">{requestError}</div>
-          )}
         </div>
+
+        {validationRequests.some((r) => r.status === 'rejected') && (
+          <div className="mb-6 rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Your Bill of Lading request was rejected. Please review the reason below and upload a corrected file.
+            <ul className="mt-2 list-disc pl-5 space-y-1">
+              {validationRequests
+                .filter((r) => r.status === 'rejected')
+                .slice(0, 3)
+                .map((r) => (
+                  <li key={r.id}>
+                    {r.file_name ?? 'Bill of Lading'} — {r.rejection_reason ?? 'No reason provided'}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
 
         {/* Stats Cards */}
         {stats && (
