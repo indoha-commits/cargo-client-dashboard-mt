@@ -162,7 +162,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
         if (cancelled) return;
         setRows(shipmentsRes.shipments.map(mapShipmentToRow));
         if (statsRes) setStats(statsRes);
-        setValidationRequests(requestsRes.requests ?? []);
+        const sortedRequests = (requestsRes.requests ?? []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        setValidationRequests(sortedRequests);
       })
       .catch((e) => {
         if (cancelled) return;
@@ -241,7 +242,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
       setRequestStatus('submitted');
       setRequestUpload(null);
       const requestsRes = await getClientValidationRequests();
-      setValidationRequests(requestsRes.requests ?? []);
+      const sortedRequests = (requestsRes.requests ?? []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+      setValidationRequests(sortedRequests);
       window.setTimeout(() => setRequestStatus('idle'), 3000);
     } catch (e) {
       setRequestStatus('error');
