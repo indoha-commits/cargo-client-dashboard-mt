@@ -60,7 +60,13 @@ const statusConfig: Record<CargoStatus, { label: string; color: string }> = {
 };
 
 function deriveStatusFromNextAction(nextRequiredAction: string): CargoStatus {
-  if (nextRequiredAction === 'COMPLETE') return 'COMPLETE';
+  const completeActions = new Set([
+    'COMPLETE',
+    'CARGO_ARRIVED_TO_YOUR_LOCATION',
+    'WAREHOUSE_ARRIVAL',
+    'CARGO_REACHED_WAREHOUSE',
+  ]);
+  if (completeActions.has(nextRequiredAction)) return 'COMPLETE';
   if (nextRequiredAction.startsWith('CLIENT_')) return 'CLIENT_ACTION_REQUIRED';
   if (nextRequiredAction.startsWith('OPS_')) return 'OPS_ACTION_REQUIRED';
   if (nextRequiredAction) return 'IN_PROGRESS';
