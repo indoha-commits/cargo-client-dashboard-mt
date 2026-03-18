@@ -40,6 +40,7 @@ type CargoRow = {
   statusLabel: string;
   completionLabel: string;
   showGroupIcon: boolean;
+  isGroupRow: boolean;
 };
 
 interface CargoListProps {
@@ -79,7 +80,26 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
   const completedCount = s.containers.filter((c) => isCompleted(c.next_required_action)).length;
   const completionLabel = `${completedCount}/${totalContainers} containers complete`;
 
-  return s.containers.map((container, index) => {
+  const groupStatus = deriveStatusFromNextAction(s.next_required_action);
+  const groupLastUpdate = s.latest_event_time ?? s.created_at;
+  const groupRow: CargoRow = {
+    id: `${s.bill_of_lading}-group`,
+    referenceNumber: s.bill_of_lading,
+    origin: s.origin,
+    destination: s.destination,
+    vessel: s.vessel,
+    eta: s.eta,
+    expectedArrivalDate: s.expected_arrival_date,
+    lastUpdate: groupLastUpdate,
+    nextRequiredAction: s.next_required_action,
+    status: groupStatus,
+    statusLabel: statusConfig[groupStatus].label,
+    completionLabel,
+    showGroupIcon: true,
+    isGroupRow: true,
+  };
+
+  const containerRows = s.containers.map((container) => {
     const lastUpdate = container.latest_event_time ?? container.created_at;
     const status = deriveStatusFromNextAction(container.next_required_action);
     return {
@@ -94,10 +114,13 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
       nextRequiredAction: container.next_required_action,
       status,
       statusLabel: statusConfig[status].label,
-      completionLabel: index === 0 ? completionLabel : '',
-      showGroupIcon: index === 0,
+      completionLabel: '',
+      showGroupIcon: false,
+      isGroupRow: false,
     };
   });
+
+  return [groupRow, ...containerRows];
 }
 
 export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: CargoListProps) {
@@ -464,12 +487,16 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               {filtered.map((cargo) => (
                 <TableRow
                   key={cargo.id}
-                  onClick={() => onSelectCargo(cargo.referenceNumber)}
-                  className={`border-b border-border cursor-pointer hover:bg-muted/60 ${cargo.showGroupIcon ? 'border-t-2 border-primary/40' : ''}`}
+                  onClick={() => {
+                    if (!cargo.isGroupRow) {
+                      onSelectCargo(cargo.referenceNumber);
+                    }
+                  }}
+                  className={`border-b border-border ${cargo.isGroupRow ? 'bg-muted/20' : 'cursor-pointer hover:bg-muted/60'} ${cargo.showGroupIcon ? 'border-t-2 border-primary/40' : ''}`}
                 >
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {cargo.showGroupIcon ? (
+                      {cargo.isGroupRow ? (
                         <Package className="size-4 text-muted-foreground" />
                       ) : (
                         <Container className="size-4 text-muted-foreground" />
