@@ -67,6 +67,9 @@ function deriveStatusFromNextAction(nextRequiredAction: string): CargoStatus {
     'CARGO_REACHED_WAREHOUSE',
   ]);
   if (completeActions.has(nextRequiredAction)) return 'COMPLETE';
+  if (['OPS_UPLOAD_YOUR_DOCUMENTS_FOR_DRAFT_AND_ASSESSMENT', 'CLIENT_VERIFY_UPLOADED_DOCUMENTS'].includes(nextRequiredAction)) {
+    return 'IN_PROGRESS';
+  }
   if (nextRequiredAction.startsWith('CLIENT_')) return 'CLIENT_ACTION_REQUIRED';
   if (nextRequiredAction.startsWith('OPS_')) return 'OPS_ACTION_REQUIRED';
   if (nextRequiredAction) return 'IN_PROGRESS';
