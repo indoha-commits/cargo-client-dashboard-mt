@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { CargoList } from './components/CargoList';
 import { CargoDetail } from './components/CargoDetail';
 import { useThemeToggle } from './hooks/useThemeToggle';
@@ -23,6 +23,7 @@ function buildTenantBasePath(tenantSlug?: string) {
 function CargoListRoute({ onLogout, onToggleTheme, theme }: CargoListRouteProps) {
   const { tenantSlug, clientSlug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const basePath = buildTenantBasePath(tenantSlug);
   const clientPath = clientSlug ? `${basePath}/client/${clientSlug}` : basePath;
 
@@ -32,6 +33,7 @@ function CargoListRoute({ onLogout, onToggleTheme, theme }: CargoListRouteProps)
 
   return (
     <CargoList
+      key={location.pathname}
       onSelectCargo={handleSelectCargo}
       onLogout={onLogout}
       onToggleTheme={onToggleTheme}
@@ -43,6 +45,7 @@ function CargoListRoute({ onLogout, onToggleTheme, theme }: CargoListRouteProps)
 function CargoDetailRoute({ onToggleTheme, theme }: CargoDetailRouteProps) {
   const { cargoId, tenantSlug, clientSlug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const basePath = buildTenantBasePath(tenantSlug);
   const clientPath = clientSlug ? `${basePath}/client/${clientSlug}` : basePath;
 
@@ -52,6 +55,7 @@ function CargoDetailRoute({ onToggleTheme, theme }: CargoDetailRouteProps) {
 
   return (
     <CargoDetail
+      key={location.pathname}
       cargoId={cargoId}
       onBack={() => navigate(clientPath || '/', { replace: false })}
       onToggleTheme={onToggleTheme}
