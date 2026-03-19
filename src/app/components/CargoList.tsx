@@ -71,7 +71,7 @@ function deriveStatusFromNextAction(nextRequiredAction: string): CargoStatus {
   if (action === 'CLIENT_VERIFY_UPLOADED_DOCUMENTS') {
     return 'IN_PROGRESS';
   }
-  if (action.startsWith('OPS_')) return 'OPS_ACTION_REQUIRED';
+  if (action.includes('OPS')) return 'OPS_ACTION_REQUIRED';
   if (action.startsWith('CLIENT_')) return 'CLIENT_ACTION_REQUIRED';
   if (action) return 'IN_PROGRESS';
   return 'UNKNOWN';
