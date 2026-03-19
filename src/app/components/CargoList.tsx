@@ -60,19 +60,20 @@ const statusConfig: Record<CargoStatus, { label: string; color: string }> = {
 };
 
 function deriveStatusFromNextAction(nextRequiredAction: string): CargoStatus {
+  const action = String(nextRequiredAction || '').toUpperCase();
   const completeActions = new Set([
     'COMPLETE',
     'CARGO_ARRIVED_TO_YOUR_LOCATION',
     'WAREHOUSE_ARRIVAL',
     'CARGO_REACHED_WAREHOUSE',
   ]);
-  if (completeActions.has(nextRequiredAction)) return 'COMPLETE';
-  if (['OPS_UPLOAD_YOUR_DOCUMENTS_FOR_DRAFT_AND_ASSESSMENT', 'CLIENT_VERIFY_UPLOADED_DOCUMENTS'].includes(nextRequiredAction)) {
+  if (completeActions.has(action)) return 'COMPLETE';
+  if (action === 'CLIENT_VERIFY_UPLOADED_DOCUMENTS') {
     return 'IN_PROGRESS';
   }
-  if (nextRequiredAction.startsWith('CLIENT_')) return 'CLIENT_ACTION_REQUIRED';
-  if (nextRequiredAction.startsWith('OPS_')) return 'OPS_ACTION_REQUIRED';
-  if (nextRequiredAction) return 'IN_PROGRESS';
+  if (action.startsWith('OPS_')) return 'OPS_ACTION_REQUIRED';
+  if (action.startsWith('CLIENT_')) return 'CLIENT_ACTION_REQUIRED';
+  if (action) return 'IN_PROGRESS';
   return 'UNKNOWN';
 }
 
