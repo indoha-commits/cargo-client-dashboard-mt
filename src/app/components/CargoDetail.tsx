@@ -82,6 +82,8 @@ function docDisplayName(documentType: string): string {
       return 'Import License';
     case 'TYPE_APPROVAL':
       return 'Type Approval';
+    case 'T1_FORM':
+      return 'T1 Cargo Details';
     case 'WH7_DOC':
       return 'WH7 Document';
     case 'EXIT_NOTE':
@@ -901,6 +903,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       : 'Category not set'}
                     {' · '}Documents last updated: {formatFriendlyDate(documentsLastUpdated)}
                     {detail?.cargo.bill_of_lading_group ? ' · Uploading here applies to all containers in this group.' : ''}
+                    {' · '}T1 form must include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
                   </div>
                 </div>
                 <div className="text-sm text-muted-foreground text-right">
@@ -978,7 +981,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   ? 'Uploading…'
                                   : status === 'rejected'
                                     ? 'Re-upload'
-                                    : 'Upload'}
+                                    : docType === 'T1_FORM'
+                                      ? 'Upload T1 details'
+                                      : 'Upload'}
                             </Button>
                           ) : doc?.driveUrl ? (
                             <button
