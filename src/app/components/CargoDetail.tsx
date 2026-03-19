@@ -895,61 +895,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card border border-border rounded-sm p-6 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-foreground">T1 Cargo Details</h3>
-                  <div className="text-sm text-muted-foreground">
-                    Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {t1Doc?.status === 'VERIFIED' && (
-                    <Badge className="bg-[#10b981] text-white rounded-sm">
-                      <Check className="size-3 mr-1" />
-                      Verified
-                    </Badge>
-                  )}
-                  {t1Doc?.status === 'UPLOADED' && (
-                    <Badge className="bg-[#f59e0b] text-white rounded-sm">Uploaded</Badge>
-                  )}
-                  {t1Doc?.status === 'REJECTED' && (
-                    <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>
-                  )}
-                  {!t1Doc?.status && <Badge className="bg-muted text-foreground rounded-sm">Required</Badge>}
-                  {((t1Doc?.status ?? 'PENDING') === 'PENDING' || t1Doc?.status === 'REJECTED') && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-border text-foreground hover:bg-muted/60"
-                      onClick={() => handleUploadClick('T1_FORM', t1Doc?.id ?? null)}
-                      disabled={!workersEnabled || isUploading === 'T1_FORM'}
-                    >
-                      <Upload className="size-4 mr-2" />
-                      {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1 details'}
-                    </Button>
-                  )}
-                  {t1Doc?.drive_url && t1Doc?.status === 'VERIFIED' && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const { url } = await getClientDocumentSignedUrl(t1Doc.id);
-                          window.open(url, '_blank', 'noreferrer');
-                        } catch (e) {
-                          alert(String(e));
-                        }
-                      }}
-                      className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      <Download className="size-4 mr-2" />
-                      View / Download
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
             <div className="bg-card border border-border rounded-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -1079,6 +1024,61 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                     );
                   })
                 )}
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-sm p-6 mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-foreground">T1 Cargo Details</h3>
+                  <div className="text-sm text-muted-foreground">
+                    Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {t1Doc?.status === 'VERIFIED' && (
+                    <Badge className="bg-[#10b981] text-white rounded-sm">
+                      <Check className="size-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
+                  {t1Doc?.status === 'UPLOADED' && (
+                    <Badge className="bg-[#f59e0b] text-white rounded-sm">Uploaded</Badge>
+                  )}
+                  {t1Doc?.status === 'REJECTED' && (
+                    <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>
+                  )}
+                  {!t1Doc?.status && <Badge className="bg-muted text-foreground rounded-sm">Required</Badge>}
+                  {((t1Doc?.status ?? 'PENDING') === 'PENDING' || t1Doc?.status === 'REJECTED') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border text-foreground hover:bg-muted/60"
+                      onClick={() => handleUploadClick('T1_FORM', t1Doc?.id ?? null)}
+                      disabled={!workersEnabled || isUploading === 'T1_FORM'}
+                    >
+                      <Upload className="size-4 mr-2" />
+                      {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1 details'}
+                    </Button>
+                  )}
+                  {t1Doc?.drive_url && t1Doc?.status === 'VERIFIED' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const { url } = await getClientDocumentSignedUrl(t1Doc.id);
+                          window.open(url, '_blank', 'noreferrer');
+                        } catch (e) {
+                          alert(String(e));
+                        }
+                      }}
+                      className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      <Download className="size-4 mr-2" />
+                      View / Download
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
