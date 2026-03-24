@@ -163,6 +163,16 @@ function mapEventHeadline(eventType: string): { status: string; location?: strin
         status: 'Cargo arrived at destination',
         location: 'Shipment has reached its final destination.',
       };
+    case 'DEPARTED_PORT':
+      return {
+        status: 'Departed from port',
+        location: 'Shipment has departed from the port of origin.',
+      };
+    case 'IN_ROUTE_RUSUMO':
+      return {
+        status: 'In route to Rusumo',
+        location: 'Shipment is in transit to Rusumo entry office.',
+      };
     default:
       return { status: formatLabel(eventType) };
   }
@@ -329,8 +339,15 @@ function getNextRequiredActionInfo(rawAction: string): NextRequiredActionInfo {
   }
 }
 
-function computeSlaHint(eta: string | null | undefined): { label: string; tone: 'ok' | 'risk' } | null {
+function computeSlaHint(
+  eta: string | null | undefined,
+  nextRequiredAction: string | null | undefined
+): { label: string; tone: 'ok' | 'risk' } | null {
   if (!eta) return null;
+  const action = String(nextRequiredAction || '').toUpperCase();
+  if (['WAREHOUSE_ARRIVAL', 'CARGO_ARRIVED_TO_YOUR_LOCATION', 'COMPLETE'].includes(action)) {
+    return { label: 'SLA: Completed', tone: 'ok' };
+  }
   const etaTime = Date.parse(eta);
   if (Number.isNaN(etaTime)) return null;
 
@@ -532,7 +549,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return maxIso(...values);
   }, [detail]);
 
-  const slaHint = useMemo(() => computeSlaHint(detail?.cargo.eta), [detail?.cargo.eta]);
+  const slaHint = useMemo(
+    () => computeSlaHint(detail?.cargo.eta, detail?.projection?.next_required_action ?? null),
+    [detail?.cargo.eta, detail?.projection?.next_required_action]
+  );
 
   const documentsByType = useMemo(() => {
     if (!detail) return {} as Record<string, UiDocument[]>;

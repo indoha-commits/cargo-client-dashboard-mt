@@ -92,7 +92,6 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
   const completionLabel = `${completedCount}/${totalContainers} containers complete`;
 
   const groupStatus = deriveStatusFromNextAction(s.next_required_action);
-  const groupLastUpdate = s.latest_event_time ?? s.created_at;
   const groupRow: CargoRow = {
     id: `${s.bill_of_lading}-group`,
     referenceNumber: s.bill_of_lading,
@@ -101,10 +100,10 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
     vessel: s.vessel,
     eta: s.eta,
     expectedArrivalDate: s.expected_arrival_date,
-    lastUpdate: groupLastUpdate,
+    lastUpdate: s.created_at,
     nextRequiredAction: s.next_required_action,
     status: groupStatus,
-    statusLabel: statusConfig[groupStatus].label,
+    statusLabel: groupStatus === 'IN_PROGRESS' ? 'Docs verified' : statusConfig[groupStatus].label,
     completionLabel,
     showGroupIcon: true,
     isGroupRow: true,
