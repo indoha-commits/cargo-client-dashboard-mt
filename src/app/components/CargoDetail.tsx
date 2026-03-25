@@ -583,7 +583,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const requiredDocs = useMemo(() => {
     if (!detail?.cargo.category) return [] as string[];
     const docs = requiredDocsForCategory(detail.cargo.category as any);
-    return docs.filter((doc) => !['WH7_DOC', 'EXIT_NOTE', 'IMPORT_PERMIT', 'T1_FORM'].includes(doc));
+    return docs;
   }, [detail?.cargo.category]);
 
   const t1Doc = useMemo(() => {
