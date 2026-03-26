@@ -563,7 +563,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
         type: d.document_type,
         status: mapDocStatus(d.status),
         uploadedDate: d.uploaded_at ? d.uploaded_at.slice(0, 10) : undefined,
-        driveUrl: d.drive_url ?? undefined,
+        driveUrl: d.source_storage_path || d.provider_path || d.drive_url || undefined,
         rejectionReason: d.rejection_reason ?? undefined,
       };
       acc[d.document_type] = acc[d.document_type] ? [...acc[d.document_type], entry] : [entry];
