@@ -603,6 +603,15 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return detail?.documents.some((d) => d.document_type === 'T1') ?? false;
   }, [detail?.documents]);
 
+  const timelineEvents: UiTimelineEvent[] = useMemo(() => {
+    if (!detail) return [];
+    const mapped = mapEventsToTimeline(detail.events);
+    if (mapped.length) return mapped;
+
+    const derived = buildDerivedTimeline(detail, approvals);
+    return derived.length ? derived : [];
+  }, [detail, approvals]);
+
   const uploadProgress = useMemo(() => {
     if (requiredDocs.length === 0) {
       return { total: 0, uploaded: 0, verified: 0 };
@@ -620,15 +629,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       { total: 0, uploaded: 0, verified: 0 }
     );
   }, [documentsByType, requiredDocs, timelineEvents]);
-
-  const timelineEvents: UiTimelineEvent[] = useMemo(() => {
-    if (!detail) return [];
-    const mapped = mapEventsToTimeline(detail.events);
-    if (mapped.length) return mapped;
-
-    const derived = buildDerivedTimeline(detail, approvals);
-    return derived.length ? derived : [];
-  }, [detail, approvals]);
 
   const containers = useMemo(() => {
     if (!detail?.cargo.bill_of_lading_group) return [] as Array<{
