@@ -86,7 +86,13 @@ function mapActionLabel(action: string): string {
 }
 
 function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
-  const isCompleted = (action: string) => action === 'CARGO_ARRIVED_TO_YOUR_LOCATION' || action === 'COMPLETE';
+  const completeActions = new Set([
+    'COMPLETE',
+    'CARGO_ARRIVED_TO_YOUR_LOCATION',
+    'WAREHOUSE_ARRIVAL',
+    'CARGO_REACHED_WAREHOUSE',
+  ]);
+  const isCompleted = (action: string) => completeActions.has(String(action || '').toUpperCase());
   const totalContainers = s.containers.length;
   const completedCount = s.containers.filter((c) => isCompleted(c.next_required_action)).length;
   const completionLabel = `${completedCount}/${totalContainers} containers complete`;
