@@ -554,7 +554,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE'];
+  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1_FORM'];
   const hasDocsApproved = useMemo(
     () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
     [detail?.events]
@@ -605,7 +605,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   }, [detail?.documents]);
 
   const hasOpsT1Doc = useMemo(() => {
-    return detail?.documents.some((d) => d.document_type === 'T1') ?? false;
+    return detail?.documents.some((d) => d.document_type === 'T1_FORM' || d.document_type === 'T1') ?? false;
   }, [detail?.documents]);
 
   const timelineEvents: UiTimelineEvent[] = useMemo(() => {
