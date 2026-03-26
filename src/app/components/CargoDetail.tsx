@@ -1011,12 +1011,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               type="button"
                               onClick={async () => {
                                 try {
-                                  const isHttpLink = doc.driveUrl.startsWith('http');
-                                  if (isHttpLink) {
-                                    window.open(doc.driveUrl, '_blank', 'noreferrer');
-                                    return;
-                                  }
-
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
                                   window.open(url, '_blank', 'noreferrer');
                                 } catch (e) {
@@ -1081,7 +1075,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1 details'}
                     </Button>
                   )}
-                  {t1Doc?.drive_url && t1Doc?.status === 'VERIFIED' && (
+                  {t1Doc?.driveUrl && t1Doc?.status === 'VERIFIED' && (
                     <button
                       type="button"
                       onClick={async () => {
