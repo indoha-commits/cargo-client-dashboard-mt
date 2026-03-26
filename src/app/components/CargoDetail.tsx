@@ -596,7 +596,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   }, [documentsByType, opsDocTypes]);
 
   const t1Doc = useMemo(() => {
-    return detail?.documents.find((d) => d.document_type === 'T1_FORM') ?? null;
+    return detail?.documents.find((d) => d.document_type === 'T1_FORM' || d.document_type === 'T1') ?? null;
   }, [detail?.documents]);
 
   const hasOpsT1Doc = useMemo(() => {
@@ -607,17 +607,19 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     if (requiredDocs.length === 0) {
       return { total: 0, uploaded: 0, verified: 0 };
     }
+    const hasDocsApproved = timelineEvents?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false;
     return requiredDocs.reduce(
       (acc, docType) => {
         const doc = documentsByType[docType]?.[0];
-        if (doc?.status === 'verified') acc.verified += 1;
-        if (doc?.status === 'uploaded') acc.uploaded += 1;
+        const effectiveStatus = hasDocsApproved && doc?.status === 'uploaded' ? 'verified' : doc?.status;
+        if (effectiveStatus === 'verified') acc.verified += 1;
+        if (effectiveStatus === 'uploaded') acc.uploaded += 1;
         acc.total += 1;
         return acc;
       },
       { total: 0, uploaded: 0, verified: 0 }
     );
-  }, [documentsByType, requiredDocs]);
+  }, [documentsByType, requiredDocs, timelineEvents]);
 
   const timelineEvents: UiTimelineEvent[] = useMemo(() => {
     if (!detail) return [];
