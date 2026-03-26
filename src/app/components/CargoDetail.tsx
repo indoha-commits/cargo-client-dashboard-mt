@@ -82,8 +82,8 @@ function docDisplayName(documentType: string): string {
       return 'Import License';
     case 'TYPE_APPROVAL':
       return 'Type Approval';
-    case 'T1_FORM':
-      return 'T1 Cargo Details';
+    case 'T1':
+      return 'T1';
     case 'WH7_DOC':
       return 'WH7 Document';
     case 'EXIT_NOTE':
@@ -554,7 +554,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1_FORM'];
+  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1'];
   const hasDocsApproved = useMemo(
     () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
     [detail?.events]
@@ -601,11 +601,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   }, [documentsByType, opsDocTypes]);
 
   const t1Doc = useMemo(() => {
-    return detail?.documents.find((d) => d.document_type === 'T1_FORM' || d.document_type === 'T1') ?? null;
+    return detail?.documents.find((d) => d.document_type === 'T1') ?? null;
   }, [detail?.documents]);
 
   const hasOpsT1Doc = useMemo(() => {
-    return detail?.documents.some((d) => d.document_type === 'T1_FORM' || d.document_type === 'T1') ?? false;
+    return detail?.documents.some((d) => d.document_type === 'T1') ?? false;
   }, [detail?.documents]);
 
   const timelineEvents: UiTimelineEvent[] = useMemo(() => {
