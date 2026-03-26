@@ -555,15 +555,26 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   );
 
   const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE'];
+  const hasDocsApproved = useMemo(
+    () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
+    [detail?.events]
+  );
+  const requiredDocs = useMemo(() => {
+    if (!detail?.cargo.category) return [] as string[];
+    const docs = requiredDocsForCategory(detail.cargo.category as any);
+    return docs.filter((doc) => !opsDocTypes.includes(doc));
+  }, [detail?.cargo.category, opsDocTypes]);
 
   const documentsByType = useMemo(() => {
     if (!detail) return {} as Record<string, UiDocument[]>;
     const grouped = detail.documents.reduce<Record<string, UiDocument[]>>((acc, d) => {
+      const baseStatus = mapDocStatus(d.status);
+      const adjustedStatus = hasDocsApproved && requiredDocs.includes(d.document_type) ? 'verified' : baseStatus;
       const entry: UiDocument = {
         id: d.id,
         name: docDisplayName(d.document_type),
         type: d.document_type,
-        status: mapDocStatus(d.status),
+        status: adjustedStatus,
         uploadedDate: d.uploaded_at ? d.uploaded_at.slice(0, 10) : undefined,
         driveUrl: d.source_storage_path || d.provider_path || d.drive_url || undefined,
         rejectionReason: d.rejection_reason ?? undefined,
@@ -581,12 +592,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     });
     return grouped;
   }, [detail]);
-
-  const requiredDocs = useMemo(() => {
-    if (!detail?.cargo.category) return [] as string[];
-    const docs = requiredDocsForCategory(detail.cargo.category as any);
-    return docs.filter((doc) => !opsDocTypes.includes(doc));
-  }, [detail?.cargo.category, opsDocTypes]);
 
   const opsDocs = useMemo(() => {
     return opsDocTypes.map((docType) => ({
