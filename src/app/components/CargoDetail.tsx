@@ -862,34 +862,34 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
         </div>
       )}
       <header className="bg-[#0F1117] text-white border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 sm:gap-3 min-w-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-primary-foreground hover:bg-primary-foreground/10 px-2 shrink-0"
             >
               <ChevronRight className="size-4 rotate-180" />
-              Back
+              <span className="hidden sm:inline ml-1">Back</span>
             </Button>
             <img
               src="/indataflow-logo.png"
               alt="InDataFlow"
-              className="h-16 w-auto brightness-0 invert"
+              className="h-10 sm:h-16 w-auto brightness-0 invert shrink-0"
             />
-            <h1 className="text-primary-foreground">Cargo Details</h1>
+            <h1 className="text-primary-foreground text-sm sm:text-base truncate">Cargo Details</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-primary-foreground/80">Client Portal</span>
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
+            <span className="hidden sm:inline text-primary-foreground/80 text-sm">Client Portal</span>
             <button
               type="button"
               onClick={onToggleTheme}
-              className={`px-3 py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-sm hover:bg-primary-foreground/10 transition-colors ${
+              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors ${
                 theme === 'dark' ? 'hidden' : 'inline-flex'
               }`}
             >
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              Dark mode
             </button>
           </div>
         </div>
@@ -906,54 +906,52 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-2 text-xs sm:text-sm flex-wrap">
             <span>Active Shipments</span>
-            <ArrowRight className="size-4" />
-            <span className="text-foreground">{cargoId}</span>
+            <ArrowRight className="size-3 sm:size-4 shrink-0" />
+            <span className="text-foreground truncate">{cargoId}</span>
           </div>
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-foreground mb-1">Shipment Reference: {cargoId}</h2>
-              {detail?.cargo.bill_of_lading_group && (
-                <p className="text-muted-foreground">Bill of Lading Group: {detail.cargo.bill_of_lading_group}</p>
-              )}
-              <p className="text-muted-foreground">
-                Route:{' '}
-                {detail?.cargo.route ??
-                  (detail?.cargo.origin && detail?.cargo.destination
-                    ? `${detail.cargo.origin} → ${detail.cargo.destination}`
-                    : 'Mombasa, KN → Kigali, RW')}
-              </p>
-              <p className="text-muted-foreground">
-                Vessel: {detail?.cargo.vessel ?? 'MSC'}
-              </p>
-            </div>
+          <div>
+            <h2 className="text-foreground mb-1 text-base sm:text-xl break-all">Shipment Reference: {cargoId}</h2>
+            {detail?.cargo.bill_of_lading_group && (
+              <p className="text-muted-foreground text-sm">BoL Group: {detail.cargo.bill_of_lading_group}</p>
+            )}
+            <p className="text-muted-foreground text-sm">
+              Route:{' '}
+              {detail?.cargo.route ??
+                (detail?.cargo.origin && detail?.cargo.destination
+                  ? `${detail.cargo.origin} → ${detail.cargo.destination}`
+                  : 'Mombasa, KN → Kigali, RW')}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Vessel: {detail?.cargo.vessel ?? 'MSC'}
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card border border-border rounded-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-foreground">Required Documents</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <div className="min-w-0">
+                  <h3 className="text-foreground text-sm sm:text-base">Required Documents</h3>
                   <div className="text-xs text-muted-foreground mt-1">
                     {detail?.cargo.category
                       ? `Category: ${formatCategoryLabel(detail.cargo.category)}`
                       : 'Category not set'}
-                    {' · '}Documents last updated: {formatFriendlyDate(documentsLastUpdated)}
-                    {detail?.cargo.bill_of_lading_group ? ' · Uploading here applies to all containers in this group.' : ''}
+                    {' · '}Updated: {formatFriendlyDate(documentsLastUpdated)}
+                    {detail?.cargo.bill_of_lading_group ? ' · Applies to all containers.' : ''}
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground text-right">
+                <div className="text-xs sm:text-sm text-muted-foreground sm:text-right shrink-0">
                   {uploadProgress.total > 0
                     ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
                     : '—'}
                 </div>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {requiredDocs.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No required documents configured.</div>
                 ) : (
@@ -964,58 +962,55 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                     return (
                       <div
                         key={docType}
-                        className="flex items-center justify-between p-4 border border-border rounded-sm"
+                        className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm"
                       >
-                        <div className="flex items-center gap-3">
-                          <FileText className="size-5 text-muted-foreground" />
-                          <div>
-                            <div className="text-foreground">{name}</div>
-                            <div className="text-sm text-muted-foreground">
+                        {/* Top row: icon + name + badge */}
+                        <div className="flex items-start gap-2">
+                          <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-foreground text-sm font-medium">{name}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Not uploaded'}
-                              {doc?.status === 'rejected' ? (
-                                <span className="ml-2 text-xs text-destructive">Rejected</span>
-                              ) : null}
-                              {doc?.status === 'rejected' && (
-                                <div className="mt-2">
-                                  <div className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-xs text-destructive">
-                                    <TriangleAlert className="size-3" />
-                                    <span className="font-medium">Rejection reason</span>
-                                    <span className="text-destructive/80">·</span>
-                                    <span className="text-destructive/80">
-                                      {doc?.rejectionReason?.trim() || 'Pending from ops team'}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
                             </div>
+                            {doc?.status === 'rejected' && (
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs text-destructive">
+                                <TriangleAlert className="size-3 shrink-0" />
+                                <span className="font-medium">Rejected:</span>
+                                <span className="text-destructive/80 break-words">
+                                  {doc?.rejectionReason?.trim() || 'Pending from ops team'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="shrink-0">
+                            {status === 'verified' && (
+                              <Badge className="bg-[#10b981] text-white rounded-sm text-xs">
+                                <Check className="size-3 mr-1" />
+                                Verified
+                              </Badge>
+                            )}
+                            {status === 'uploaded' && (
+                              <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>
+                            )}
+                            {status === 'rejected' && (
+                              <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>
+                            )}
+                            {status === 'pending' && (
+                              <Badge className="bg-muted text-foreground rounded-sm text-xs">Required</Badge>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {status === 'verified' && (
-                            <Badge className="bg-[#10b981] text-white rounded-sm">
-                              <Check className="size-3 mr-1" />
-                              Verified
-                            </Badge>
-                          )}
-                          {status === 'uploaded' && (
-                            <Badge className="bg-[#f59e0b] text-white rounded-sm">Uploaded</Badge>
-                          )}
-                          {status === 'rejected' && (
-                            <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>
-                          )}
-                          {status === 'pending' && (
-                            <Badge className="bg-muted text-foreground rounded-sm">Required</Badge>
-                          )}
-
+                        {/* Action button row */}
+                        <div className="flex justify-end">
                           {status === 'pending' || status === 'rejected' ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-border text-foreground hover:bg-muted/60"
+                              className="border-border text-foreground hover:bg-muted/60 text-xs h-8"
                               onClick={() => handleUploadClick(docType, doc?.id ?? null)}
                               disabled={!workersEnabled || isUploading === docType}
                             >
-                              <Upload className="size-4 mr-2" />
+                              <Upload className="size-3 mr-1.5" />
                               {!workersEnabled
                                 ? 'Disabled'
                                 : isUploading === docType
@@ -1023,7 +1018,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   : status === 'rejected'
                                     ? 'Re-upload'
                                     : docType === 'T1_FORM'
-                                      ? 'Upload T1 details'
+                                      ? 'Upload T1'
                                       : 'Upload'}
                             </Button>
                           ) : doc?.driveUrl ? (
@@ -1037,19 +1032,19 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   alert(String(e));
                                 }
                               }}
-                              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
                             >
-                              <Download className="size-4 mr-2" />
+                              <Download className="size-3 mr-1.5" />
                               View / Download
                             </button>
                           ) : (
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-muted-foreground hover:text-foreground"
+                              className="text-muted-foreground hover:text-foreground text-xs h-8"
                               disabled
                             >
-                              <Download className="size-4 mr-2" />
+                              <Download className="size-3 mr-1.5" />
                               View
                             </Button>
                           )}
@@ -1062,38 +1057,38 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             </div>
 
             {!hasOpsT1Doc && (
-              <div className="bg-card border border-border rounded-sm p-6 mb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-foreground">T1 Cargo Details</h3>
-                    <div className="text-sm text-muted-foreground">
+              <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
+                  <div className="min-w-0">
+                    <h3 className="text-foreground text-sm sm:text-base">T1 Cargo Details</h3>
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                       Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     {t1Doc?.status === 'VERIFIED' && (
-                      <Badge className="bg-[#10b981] text-white rounded-sm">
+                      <Badge className="bg-[#10b981] text-white rounded-sm text-xs">
                         <Check className="size-3 mr-1" />
                         Verified
                       </Badge>
                     )}
                     {t1Doc?.status === 'UPLOADED' && (
-                      <Badge className="bg-[#f59e0b] text-white rounded-sm">Uploaded</Badge>
+                      <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>
                     )}
                     {t1Doc?.status === 'REJECTED' && (
-                      <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>
+                      <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>
                     )}
-                    {!t1Doc?.status && <Badge className="bg-muted text-foreground rounded-sm">Required</Badge>}
+                    {!t1Doc?.status && <Badge className="bg-muted text-foreground rounded-sm text-xs">Required</Badge>}
                     {((t1Doc?.status ?? 'PENDING') === 'PENDING' || t1Doc?.status === 'REJECTED') && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-border text-foreground hover:bg-muted/60"
+                        className="border-border text-foreground hover:bg-muted/60 text-xs h-8"
                         onClick={() => handleUploadClick('T1_FORM', t1Doc?.id ?? null)}
                         disabled={!workersEnabled || isUploading === 'T1_FORM'}
                       >
-                        <Upload className="size-4 mr-2" />
-                        {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1 details'}
+                        <Upload className="size-3 mr-1.5" />
+                        {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1'}
                       </Button>
                     )}
                     {t1Doc?.driveUrl && t1Doc?.status === 'VERIFIED' && (
@@ -1107,9 +1102,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             alert(String(e));
                           }
                         }}
-                        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                        className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
                       >
-                        <Download className="size-4 mr-2" />
+                        <Download className="size-3 mr-1.5" />
                         View / Download
                       </button>
                     )}
@@ -1118,13 +1113,13 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             )}
 
-            <div className="bg-card border border-border rounded-sm p-6">
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-foreground">Drafts, Assessments &amp; Ops Docs</h3>
-                  <div className="text-sm text-muted-foreground">Review internal drafts and assessments and approve for taxes/clearance.</div>
+                <div className="min-w-0">
+                  <h3 className="text-foreground text-sm sm:text-base">Drafts, Assessments &amp; Ops Docs</h3>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">Review and approve drafts for taxes/clearance.</div>
                 </div>
-                <div className="text-sm text-muted-foreground">{approvals.length} items</div>
+                <div className="text-xs sm:text-sm text-muted-foreground shrink-0 ml-2">{approvals.length} items</div>
               </div>
 
               {approvalsError && (
@@ -1133,27 +1128,27 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 </div>
               )}
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {opsDocs.map(({ docType, doc }) => {
                   const status = doc?.status ?? 'pending';
                   return (
-                    <div key={docType} className="flex items-center justify-between p-4 border border-border rounded-sm">
-                      <div className="flex items-center gap-3">
-                        <FileText className="size-5 text-muted-foreground" />
-                        <div>
-                          <div className="text-foreground">{docDisplayName(docType)}</div>
-                          <div className="text-sm text-muted-foreground">
+                    <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
+                      <div className="flex items-start gap-2">
+                        <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-foreground text-sm font-medium">{docDisplayName(docType)}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
                             {doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'No file uploaded yet'}
                           </div>
                         </div>
+                        <div className="shrink-0">
+                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
+                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
+                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
+                          {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs">Pending</Badge>}
+                        </div>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm">Verified</Badge>}
-                        {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm">Uploaded</Badge>}
-                        {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>}
-                        {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm">Required</Badge>}
-
+                      <div className="flex justify-end">
                         {doc?.driveUrl ? (
                           <button
                             type="button"
@@ -1165,14 +1160,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                 alert(String(e));
                               }
                             }}
-                            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                            className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
                           >
-                            <Download className="size-4 mr-2" />
+                            <Download className="size-3 mr-1.5" />
                             View / Download
                           </button>
                         ) : (
-                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" disabled>
-                            <Download className="size-4 mr-2" />
+                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground text-xs h-8" disabled>
+                            <Download className="size-3 mr-1.5" />
                             View
                           </Button>
                         )}
@@ -1185,20 +1180,20 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                   <div className="text-sm text-muted-foreground">No drafts or assessments have been shared yet.</div>
                 ) : (
                   approvals.map((a) => (
-                    <div key={a.id} className="flex items-center justify-between p-4 border border-border rounded-sm">
-                      <div className="flex items-center gap-3">
-                        <FileText className="size-5 text-muted-foreground" />
-                        <div>
-                          <div className="text-foreground">{formatCategoryLabel(a.kind)}</div>
-                          <div className="text-sm text-muted-foreground">Shared {a.created_at?.slice(0, 10)}</div>
+                    <div key={a.id} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
+                      <div className="flex items-start gap-2">
+                        <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-foreground text-sm font-medium">{formatCategoryLabel(a.kind)}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">Shared {a.created_at?.slice(0, 10)}</div>
+                        </div>
+                        <div className="shrink-0">
+                          {a.status === 'APPROVED' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Approved</Badge>}
+                          {a.status === 'REJECTED' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
+                          {a.status === 'PENDING' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Pending</Badge>}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        {a.status === 'APPROVED' && <Badge className="bg-[#10b981] text-white rounded-sm">Approved</Badge>}
-                        {a.status === 'REJECTED' && <Badge className="bg-[#ef4444] text-white rounded-sm">Rejected</Badge>}
-                        {a.status === 'PENDING' && <Badge className="bg-[#f59e0b] text-white rounded-sm">Pending</Badge>}
-
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={async () => {
@@ -1209,10 +1204,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               alert(String(e));
                             }
                           }}
-                          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+                          className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
                           disabled={!a.file_url && !a.file_path}
                         >
-                          <Download className="size-4 mr-2" />
+                          <Download className="size-3 mr-1.5" />
                           Download
                         </button>
 
@@ -1221,7 +1216,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-border text-foreground hover:bg-muted/60"
+                              className="border-border text-foreground hover:bg-muted/60 text-xs h-8"
                               onClick={() => setRejectionDialog({ approvalId: a.id, reason: '' })}
                               disabled={approvalsBusyId === a.id}
                             >
@@ -1229,7 +1224,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             </Button>
                             <Button
                               size="sm"
-                              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
                               onClick={() => handleApprovalApprove(a.id)}
                               disabled={approvalsBusyId === a.id}
                             >
@@ -1244,28 +1239,28 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-6">
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-foreground">Shipment Timeline</h3>
+                  <h3 className="text-foreground text-sm sm:text-base">Shipment Timeline</h3>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Timeline last updated: {formatFriendlyDate(timelineLastUpdated)}
+                    Updated: {formatFriendlyDate(timelineLastUpdated)}
                   </div>
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted/60 text-xs h-8 shrink-0"
                   onClick={() => setTimelineExpanded((v) => !v)}
                 >
-                  {timelineExpanded ? 'Collapse' : 'Expand Timeline'}
+                  {timelineExpanded ? 'Collapse' : 'Expand'}
                 </Button>
               </div>
 
               {containers.length > 0 && (
                 <div className="mb-4 rounded-sm border border-border bg-muted/20">
-                  <div className="px-4 py-3 border-b border-border text-sm text-muted-foreground">
+                  <div className="px-3 py-2 border-b border-border text-xs text-muted-foreground">
                     Containers in this group
                   </div>
                   <div className="divide-y divide-border">
@@ -1274,20 +1269,20 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         key={container.cargo_id}
                         type="button"
                         onClick={() => setSelectedContainerId(container.cargo_id)}
-                        className={`w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/40 transition-colors ${
+                        className={`w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-muted/40 transition-colors gap-2 ${
                           selectedContainerId === container.cargo_id ? 'bg-muted/30' : ''
                         }`}
                       >
-                        <div>
-                          <div className="text-foreground text-sm">{container.cargo_id}</div>
-                          <div className="text-xs text-muted-foreground">
+                        <div className="min-w-0">
+                          <div className="text-foreground text-xs sm:text-sm truncate">{container.cargo_id}</div>
+                          <div className="text-xs text-muted-foreground truncate">
                             {formatContainerStatus(container.next_required_action)}
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground shrink-0">
                           {container.latest_event_time
                             ? formatFriendlyDate(container.latest_event_time)
-                            : 'No updates yet'}
+                            : 'No updates'}
                         </div>
                       </button>
                     ))}
@@ -1303,8 +1298,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           className={`absolute left-[11px] top-6 w-px h-full ${event.completed ? 'bg-[#10b981]' : 'bg-border'}`}
                         />
                       )}
-                      <div className="flex gap-4">
-                        <div className="flex flex-col items-center">
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center shrink-0">
                           {event.completed ? (
                             <div className="size-6 rounded-full bg-[#10b981] flex items-center justify-center">
                               <Check className="size-4 text-white" />
@@ -1315,16 +1310,16 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-foreground">{event.status}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Clock className="size-3" />
-                              {event.date} {event.time}
+                        <div className="flex-1 pb-4 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 mb-1">
+                            <div className="text-foreground text-sm">{event.status}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="size-3 shrink-0" />
+                              <span className="truncate">{event.date} {event.time}</span>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">{event.location}</div>
-                          {event.detail && <div className="text-xs text-muted-foreground mt-1">{event.detail}</div>}
+                          <div className="text-xs text-muted-foreground">{event.location}</div>
+                          {event.detail && <div className="text-xs text-muted-foreground mt-1 break-words">{event.detail}</div>}
                         </div>
                       </div>
                     </div>
@@ -1334,26 +1329,24 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-card border border-border rounded-sm p-6">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="text-foreground">Action Required</h3>
-                  <div className="text-xs text-muted-foreground mt-1">Next Required Action</div>
-                </div>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+              <div className="mb-3">
+                <h3 className="text-foreground text-sm sm:text-base">Action Required</h3>
+                <div className="text-xs text-muted-foreground mt-0.5">Next Required Action</div>
               </div>
 
-              <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/10 p-4">
-                <div className="mt-0.5 rounded-full bg-primary/20 p-2">
+              <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/10 p-3 sm:p-4">
+                <div className="mt-0.5 rounded-full bg-primary/20 p-1.5 sm:p-2 shrink-0">
                   <TriangleAlert className="size-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-foreground text-sm uppercase tracking-wide">Action needed</div>
-                  <div className="text-lg text-foreground font-semibold mt-1 break-words">
+                  <div className="text-foreground text-xs uppercase tracking-wide">Action needed</div>
+                  <div className="text-sm sm:text-lg text-foreground font-semibold mt-1 break-words">
                     {nextRequiredActionInfo.title}
                   </div>
                   {nextRequiredActionInfo.subtitle ? (
-                    <div className="text-sm text-muted-foreground mt-1 break-words">
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
                       {nextRequiredActionInfo.subtitle}
                     </div>
                   ) : null}
@@ -1361,17 +1354,17 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-6">
-              <h3 className="text-foreground mb-4">Notifications</h3>
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+              <h3 className="text-foreground mb-3 text-sm sm:text-base">Notifications</h3>
               <div className="space-y-3">
-                <div className="p-4 border border-border rounded-md bg-muted/30">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-full bg-primary/15 p-2">
+                <div className="p-3 sm:p-4 border border-border rounded-md bg-muted/30">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="mt-0.5 rounded-full bg-primary/15 p-1.5 sm:p-2 shrink-0">
                       <TriangleAlert className="size-4 text-primary" />
                     </div>
-                    <div>
-                      <div className="text-foreground font-semibold">Next step</div>
-                      <div className="text-sm text-muted-foreground mt-1 break-words">
+                    <div className="min-w-0">
+                      <div className="text-foreground font-semibold text-sm">Next step</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
                         {nextRequiredActionInfo.title}{' '}
                         {nextRequiredActionInfo.subtitle ? nextRequiredActionInfo.subtitle : ''}
                       </div>
@@ -1381,25 +1374,25 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-6">
-              <h3 className="text-foreground mb-4">Shipment Details</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Container Count</span>
-                  <span className="text-foreground">{detail?.cargo.container_count ?? 0}</span>
+            <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+              <h3 className="text-foreground mb-3 text-sm sm:text-base">Shipment Details</h3>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground text-xs sm:text-sm">Container Count</span>
+                  <span className="text-foreground text-xs sm:text-sm">{detail?.cargo.container_count ?? 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Arrival Date</span>
-                  <span className="text-foreground">{detail?.cargo.expected_arrival_date ?? '—'}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground text-xs sm:text-sm">Arrival Date</span>
+                  <span className="text-foreground text-xs sm:text-sm text-right">{detail?.cargo.expected_arrival_date ?? '—'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">ETA</span>
-                  <span className="text-foreground">{detail?.cargo.eta ?? '—'}</span>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground text-xs sm:text-sm">ETA</span>
+                  <span className="text-foreground text-xs sm:text-sm text-right">{detail?.cargo.eta ?? '—'}</span>
                 </div>
                 {slaHint && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">SLA</span>
-                    <span className={slaHint.tone === 'risk' ? 'text-[#b45309]' : 'text-foreground'}>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-muted-foreground text-xs sm:text-sm">SLA</span>
+                    <span className={`text-xs sm:text-sm text-right ${slaHint.tone === 'risk' ? 'text-[#b45309]' : 'text-foreground'}`}>
                       {slaHint.label.replace(/^SLA:\s*/, '')}
                     </span>
                   </div>

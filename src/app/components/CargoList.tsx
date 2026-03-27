@@ -332,50 +332,50 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="bg-[#0F1117] text-white border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <img
               src="/indataflow-logo.png"
               alt="InDataFlow"
-              className="h-16 w-auto brightness-0 invert"
+              className="h-10 sm:h-16 w-auto brightness-0 invert shrink-0"
             />
+            <span className="hidden sm:inline text-primary-foreground/80 text-sm whitespace-nowrap">Client Portal</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-primary-foreground/80">Client Portal</span>
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <button
               type="button"
               onClick={onToggleTheme}
-              className={`px-3 py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-sm hover:bg-primary-foreground/10 transition-colors ${
+              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors ${
                 theme === 'dark' ? 'hidden' : 'inline-flex'
               }`}
             >
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              Dark mode
             </button>
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 text-primary-foreground hover:bg-primary-foreground/10 transition-colors rounded-sm"
+              className="flex items-center gap-1.5 px-2 py-1.5 sm:px-4 sm:py-2 text-primary-foreground hover:bg-primary-foreground/10 transition-colors rounded-sm text-sm"
             >
-              <LogOut className="size-4" />
-              <span>Logout</span>
+              <LogOut className="size-4 shrink-0" />
+              <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-6">
-          <div className="bg-card border border-border rounded-sm p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        <div className="mb-4 sm:mb-6">
+          <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
+            <div className="flex flex-col gap-4">
               <div>
-                <h2 className="text-foreground mb-1">New Clearance Request</h2>
+                <h2 className="text-foreground mb-1 text-base sm:text-lg">New Clearance Request</h2>
                 <div className="text-sm text-muted-foreground">
                   Upload your Bill of Lading to start review. Ops will approve or reject it before cargo creation.
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-background text-sm cursor-pointer">
-                  <Upload className="size-4 text-muted-foreground" />
-                  <span>{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
+                <label className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-sm bg-background text-sm cursor-pointer min-w-0">
+                  <Upload className="size-4 text-muted-foreground shrink-0" />
+                  <span className="truncate">{requestUpload?.file ? requestUpload.file.name : 'Upload Bill of Lading'}</span>
                   <input
                     type="file"
                     accept="application/pdf,image/*"
@@ -394,14 +394,14 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   type="button"
                   onClick={handleRequestSubmit}
                   disabled={!requestUpload?.file || requestStatus === 'uploading'}
-                  className="px-4 py-2 rounded-sm text-sm border border-primary text-primary hover:bg-primary/10 disabled:opacity-60"
+                  className="px-4 py-2 rounded-sm text-sm border border-primary text-primary hover:bg-primary/10 disabled:opacity-60 whitespace-nowrap"
                 >
                   {requestStatus === 'uploading' ? 'Submitting…' : 'Submit Request'}
                 </button>
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="mt-4 sm:mt-5 grid gap-2 sm:gap-3 grid-cols-3">
               {[
                 { key: 'uploading', label: 'Upload' },
                 { key: 'pending', label: 'Pending review' },
@@ -419,9 +419,9 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                       ? 'border-primary text-primary'
                       : 'border-border text-muted-foreground';
                 return (
-                  <div key={step.key} className={`rounded-sm border px-3 py-2 text-xs ${color}`}>
-                    <div className="text-[11px] uppercase tracking-wide">Step {index + 1}</div>
-                    <div className="text-sm font-medium mt-1">{step.label}</div>
+                  <div key={step.key} className={`rounded-sm border px-2 py-1.5 sm:px-3 sm:py-2 text-xs ${color}`}>
+                    <div className="text-[10px] sm:text-[11px] uppercase tracking-wide">Step {index + 1}</div>
+                    <div className="text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 leading-tight">{step.label}</div>
                   </div>
                 );
               })}
@@ -452,62 +452,134 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-card border border-border rounded-sm p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-500/10 rounded-lg">
-                  <Ship className="size-6 text-blue-500" />
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="bg-card border border-border rounded-sm p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg w-fit">
+                  <Ship className="size-4 sm:size-6 text-blue-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.total_cargo}</div>
-                  <div className="text-sm text-muted-foreground">Total Shipments</div>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.total_cargo}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Total Shipments</div>
                 </div>
               </div>
             </div>
             
-            <div className="bg-card border border-border rounded-sm p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-emerald-500/10 rounded-lg">
-                  <CheckCircle2 className="size-6 text-emerald-500" />
+            <div className="bg-card border border-border rounded-sm p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-emerald-500/10 rounded-lg w-fit">
+                  <CheckCircle2 className="size-4 sm:size-6 text-emerald-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.completed_shipments ?? 0}</div>
-                  <div className="text-sm text-muted-foreground">
-                    Completed Shipments
-                    <span className="ml-2 text-xs opacity-70">(all containers complete)</span>
-                  </div>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.completed_shipments ?? 0}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Completed</div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-card border border-border rounded-sm p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-500/10 rounded-lg">
-                  <Package className="size-6 text-purple-500" />
+            <div className="bg-card border border-border rounded-sm p-3 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-purple-500/10 rounded-lg w-fit">
+                  <Package className="size-4 sm:size-6 text-purple-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-foreground">{stats.total_containers}</div>
-                  <div className="text-sm text-muted-foreground">Total Containers</div>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.total_containers}</div>
+                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Containers</div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        <div className="mb-4 sm:mb-6">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search by reference number..."
-              className="pl-10 bg-card border-border"
+              className="pl-10 bg-card border-border w-full sm:max-w-md"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-sm">
+        {/* Mobile card list */}
+        <div className="sm:hidden space-y-2">
+          {filtered.length === 0 ? (
+            <div className="bg-card border border-border rounded-sm py-10 text-center text-muted-foreground">
+              {loadError ? (
+                <div>
+                  <div className="text-foreground mb-1">Could not load shipments</div>
+                  <div className="text-sm">{loadError}</div>
+                </div>
+              ) : (
+                <div>No active shipments found.</div>
+              )}
+            </div>
+          ) : (
+            filtered.map((cargo) => (
+              <div
+                key={cargo.id}
+                onClick={() => {
+                  if (cargo.isGroupRow) {
+                    toggleGroup(cargo.groupKey);
+                  } else {
+                    onSelectCargo(cargo.referenceNumber);
+                  }
+                }}
+                className={`bg-card border rounded-sm p-3 ${
+                  cargo.isGroupRow
+                    ? 'border-primary/40 border-l-2 bg-muted/20'
+                    : 'border-border cursor-pointer active:bg-muted/60'
+                }`}
+              >
+                {/* Row 1: icon + ref + chevron + status badge */}
+                <div className="flex items-center gap-2 mb-2">
+                  {cargo.isGroupRow ? (
+                    <Package className="size-4 text-muted-foreground shrink-0" />
+                  ) : (
+                    <Container className="size-4 text-muted-foreground shrink-0 ml-1" />
+                  )}
+                  <span className="text-foreground font-medium text-sm flex-1 truncate min-w-0">{cargo.referenceNumber}</span>
+                  {cargo.isGroupRow && (
+                    <span className="text-muted-foreground shrink-0">
+                      {expandedGroups.has(cargo.groupKey) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                    </span>
+                  )}
+                  <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-0.5 text-xs shrink-0`}>
+                    {cargo.statusLabel}
+                  </Badge>
+                </div>
+                {/* Row 2: route */}
+                <div className="text-xs text-muted-foreground mb-1 truncate">
+                  {cargo.origin ?? 'Mombasa, KN'} → {cargo.destination ?? 'Kigali, RW'}
+                </div>
+                {/* Row 3: vessel + eta */}
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">Vessel: {cargo.vessel ?? 'MSC'}</span>
+                  <span className="shrink-0">ETA: {cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</span>
+                </div>
+                {/* Completion label */}
+                {cargo.isGroupRow && cargo.completionLabel && (
+                  <div className="mt-1.5">
+                    <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                      {cargo.completionLabel}
+                    </span>
+                  </div>
+                )}
+                {/* Last update */}
+                <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+                  <Clock className="size-3 shrink-0" />
+                  <span className="truncate">{formatRelativeTime(cargo.lastUpdate)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block bg-card border border-border rounded-sm">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
@@ -598,7 +670,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           </Table>
         </div>
 
-        <div className="mt-4 text-muted-foreground">Showing {filtered.length} containers</div>
+        <div className="mt-3 sm:mt-4 text-sm text-muted-foreground">Showing {filtered.length} containers</div>
       </div>
     </div>
   );
