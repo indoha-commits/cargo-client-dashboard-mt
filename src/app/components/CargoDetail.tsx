@@ -962,7 +962,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 ) : (
                   requiredDocs.map((docType) => {
                     const doc = documentsByType[docType]?.[0];
-                    const status = mapDocStatus(doc?.status ?? 'pending');
+                    const status = doc?.status ?? 'pending'; // already mapped via documentsByType
                     const name = doc?.name ?? formatCategoryLabel(docType);
                     return (
                       <div
@@ -1141,7 +1141,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
               <div className="space-y-2 sm:space-y-3">
                 {opsDocs.filter(({ doc }) => doc !== null).map(({ docType, doc }) => {
-                  const status = mapDocStatus(doc?.status ?? 'pending');
+                  const status = doc?.status ?? 'pending'; // already mapped via documentsByType
                   const isNotAvailable = (status as string) === 'not_available';
                   return (
                     <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
