@@ -339,7 +339,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
               alt="InDataFlow"
               className="h-10 sm:h-16 w-auto brightness-0 invert shrink-0"
             />
-            <span className="hidden sm:inline text-primary-foreground/80 text-sm whitespace-nowrap">Client Portal</span>
+            <span className="hidden sm:inline text-primary-foreground/80 text-base whitespace-nowrap">Client Portal</span>
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <button
@@ -367,8 +367,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
             <div className="flex flex-col gap-4">
               <div>
-                <h2 className="text-foreground mb-1 text-base sm:text-lg">New Clearance Request</h2>
-                <div className="text-sm text-muted-foreground">
+                <h2 className="text-foreground mb-1 text-base sm:text-xl">New Clearance Request</h2>
+                <div className="text-sm sm:text-base text-muted-foreground">
                   Upload your Bill of Lading to start review. Ops will approve or reject it before cargo creation.
                 </div>
               </div>
@@ -419,15 +419,15 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                       ? 'border-primary text-primary'
                       : 'border-border text-muted-foreground';
                 return (
-                  <div key={step.key} className={`rounded-sm border px-2 py-1.5 sm:px-3 sm:py-2 text-xs ${color}`}>
-                    <div className="text-[10px] sm:text-[11px] uppercase tracking-wide">Step {index + 1}</div>
-                    <div className="text-xs sm:text-sm font-medium mt-0.5 sm:mt-1 leading-tight">{step.label}</div>
+                  <div key={step.key} className={`rounded-sm border px-2 py-1.5 sm:px-3 sm:py-2 ${color}`}>
+                    <div className="text-[10px] sm:text-xs uppercase tracking-wide">Step {index + 1}</div>
+                    <div className="text-xs sm:text-base font-medium mt-0.5 sm:mt-1 leading-tight">{step.label}</div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="mt-4 text-xs text-muted-foreground">
+            <div className="mt-4 text-xs sm:text-sm text-muted-foreground">
               {requestStep === 'uploading' && 'Uploading your Bill of Lading…'}
               {requestStep === 'pending' && (
                 `Your request is pending review by Ops. ${latestRequest?.file_name ?? 'Bill of Lading'} · Uploaded ${latestRequest ? new Date(latestRequest.created_at).toLocaleString() : ''}`
@@ -459,8 +459,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   <Ship className="size-4 sm:size-6 text-blue-500" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.total_cargo}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Total Shipments</div>
+                  <div className="text-xl sm:text-3xl font-semibold text-foreground">{stats.total_cargo}</div>
+                  <div className="text-xs sm:text-base text-muted-foreground leading-tight">Total Shipments</div>
                 </div>
               </div>
             </div>
@@ -471,8 +471,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   <CheckCircle2 className="size-4 sm:size-6 text-emerald-500" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.completed_shipments ?? 0}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Completed</div>
+                  <div className="text-xl sm:text-3xl font-semibold text-foreground">{stats.completed_shipments ?? 0}</div>
+                  <div className="text-xs sm:text-base text-muted-foreground leading-tight">Completed</div>
                 </div>
               </div>
             </div>
@@ -483,8 +483,8 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   <Package className="size-4 sm:size-6 text-purple-500" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">{stats.total_containers}</div>
-                  <div className="text-xs sm:text-sm text-muted-foreground leading-tight">Containers</div>
+                  <div className="text-xl sm:text-3xl font-semibold text-foreground">{stats.total_containers}</div>
+                  <div className="text-xs sm:text-base text-muted-foreground leading-tight">Containers</div>
                 </div>
               </div>
             </div>

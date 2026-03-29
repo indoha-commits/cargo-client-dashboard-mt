@@ -65,6 +65,7 @@ function mapDocStatus(status: string): UiDocument['status'] {
   if (status === 'VERIFIED') return 'verified';
   if (status === 'UPLOADED') return 'uploaded';
   if (status === 'REJECTED') return 'rejected';
+  if (status === 'NOT_AVAILABLE') return 'not_available' as any;
   return 'pending';
 }
 
@@ -970,7 +971,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           <div className="flex-1 min-w-0">
                             <div className="text-foreground text-sm font-medium">{name}</div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              {doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Not uploaded'}
+                              {(status as string) === 'not_available'
+                                ? 'Not available for this shipment'
+                                : doc?.uploadedDate
+                                  ? `Uploaded ${doc.uploadedDate}`
+                                  : 'Not uploaded'}
                             </div>
                             {doc?.status === 'rejected' && (
                               <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs text-destructive">
@@ -995,12 +1000,16 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             {status === 'rejected' && (
                               <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>
                             )}
+                            {(status as string) === 'not_available' && (
+                              <Badge className="bg-[#6b7280] text-white rounded-sm text-xs">Not Available</Badge>
+                            )}
                             {status === 'pending' && (
                               <Badge className="bg-muted text-foreground rounded-sm text-xs">Required</Badge>
                             )}
                           </div>
                         </div>
-                        {/* Action button row */}
+                        {/* Action button row — hidden when not_available */}
+                        {(status as string) !== 'not_available' && (
                         <div className="flex justify-end">
                           {status === 'pending' || status === 'rejected' ? (
                             <Button
@@ -1049,6 +1058,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             </Button>
                           )}
                         </div>
+                        )}
                       </div>
                     );
                   })
