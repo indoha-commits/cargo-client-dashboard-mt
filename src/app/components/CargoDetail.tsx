@@ -879,7 +879,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               alt="InDataFlow"
               className="h-10 sm:h-16 w-auto brightness-0 invert shrink-0"
             />
-            <h1 className="text-primary-foreground text-sm sm:text-base truncate">Cargo Details</h1>
+            <h1 className="text-primary-foreground text-sm sm:text-lg truncate">Cargo Details</h1>
           </div>
           <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <span className="hidden sm:inline text-primary-foreground/80 text-sm">Client Portal</span>
@@ -909,24 +909,24 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <div className="mb-4 sm:mb-6">
-          <div className="flex items-center gap-1.5 text-muted-foreground mb-2 text-xs sm:text-sm flex-wrap">
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-2 text-xs sm:text-base flex-wrap">
             <span>Active Shipments</span>
             <ArrowRight className="size-3 sm:size-4 shrink-0" />
             <span className="text-foreground truncate">{cargoId}</span>
           </div>
           <div>
-            <h2 className="text-foreground mb-1 text-base sm:text-xl break-all">Shipment Reference: {cargoId}</h2>
+            <h2 className="text-foreground mb-1 text-base sm:text-2xl break-all">Shipment Reference: {cargoId}</h2>
             {detail?.cargo.bill_of_lading_group && (
-              <p className="text-muted-foreground text-sm">BoL Group: {detail.cargo.bill_of_lading_group}</p>
+              <p className="text-muted-foreground text-sm sm:text-base">BoL Group: {detail.cargo.bill_of_lading_group}</p>
             )}
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Route:{' '}
               {detail?.cargo.route ??
                 (detail?.cargo.origin && detail?.cargo.destination
                   ? `${detail.cargo.origin} → ${detail.cargo.destination}`
                   : 'Mombasa, KN → Kigali, RW')}
             </p>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Vessel: {detail?.cargo.vessel ?? 'MSC'}
             </p>
           </div>
@@ -937,8 +937,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div className="min-w-0">
-                  <h3 className="text-foreground text-sm sm:text-base">Required Documents</h3>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <h3 className="text-foreground text-sm sm:text-xl">Required Documents</h3>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     {detail?.cargo.category
                       ? `Category: ${formatCategoryLabel(detail.cargo.category)}`
                       : 'Category not set'}
@@ -946,7 +946,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                     {detail?.cargo.bill_of_lading_group ? ' · Applies to all containers.' : ''}
                   </div>
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground sm:text-right shrink-0">
+                <div className="text-xs sm:text-base text-muted-foreground sm:text-right shrink-0">
                   {uploadProgress.total > 0
                     ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
                     : '—'}
@@ -969,8 +969,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         <div className="flex items-start gap-2">
                           <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-foreground text-sm font-medium">{name}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
+                            <div className="text-foreground text-sm sm:text-base font-medium">{name}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                               {(status as string) === 'not_available'
                                 ? 'Not available for this shipment'
                                 : doc?.uploadedDate
@@ -1070,8 +1070,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
                   <div className="min-w-0">
-                    <h3 className="text-foreground text-sm sm:text-base">T1 Cargo Details</h3>
-                    <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    <h3 className="text-foreground text-sm sm:text-xl">T1 Cargo Details</h3>
+                    <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
                       Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
                     </div>
                   </div>
@@ -1126,10 +1126,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="min-w-0">
-                  <h3 className="text-foreground text-sm sm:text-base">Drafts, Assessments &amp; Ops Docs</h3>
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">Review and approve drafts for taxes/clearance.</div>
+                  <h3 className="text-foreground text-sm sm:text-xl">Drafts, Assessments &amp; Ops Docs</h3>
+                  <div className="text-xs sm:text-base text-muted-foreground mt-0.5">Review and approve drafts for taxes/clearance.</div>
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground shrink-0 ml-2">{approvals.length} items</div>
+                <div className="text-xs sm:text-base text-muted-foreground shrink-0 ml-2">{approvals.length} items</div>
               </div>
 
               {approvalsError && (
@@ -1146,8 +1146,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       <div className="flex items-start gap-2">
                         <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground text-sm font-medium">{docDisplayName(docType)}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <div className="text-foreground text-sm sm:text-base font-medium">{docDisplayName(docType)}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                             {doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'No file uploaded yet'}
                           </div>
                         </div>
@@ -1194,8 +1194,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       <div className="flex items-start gap-2">
                         <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground text-sm font-medium">{formatCategoryLabel(a.kind)}</div>
-                          <div className="text-xs text-muted-foreground mt-0.5">Shared {a.created_at?.slice(0, 10)}</div>
+                          <div className="text-foreground text-sm sm:text-base font-medium">{formatCategoryLabel(a.kind)}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">Shared {a.created_at?.slice(0, 10)}</div>
                         </div>
                         <div className="shrink-0">
                           {a.status === 'APPROVED' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Approved</Badge>}
@@ -1252,8 +1252,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-foreground text-sm sm:text-base">Shipment Timeline</h3>
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <h3 className="text-foreground text-sm sm:text-xl">Shipment Timeline</h3>
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Updated: {formatFriendlyDate(timelineLastUpdated)}
                   </div>
                 </div>
@@ -1342,8 +1342,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
           <div className="space-y-4 sm:space-y-6">
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="mb-3">
-                <h3 className="text-foreground text-sm sm:text-base">Action Required</h3>
-                <div className="text-xs text-muted-foreground mt-0.5">Next Required Action</div>
+                <h3 className="text-foreground text-sm sm:text-xl">Action Required</h3>
+                <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">Next Required Action</div>
               </div>
 
               <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/10 p-3 sm:p-4">
@@ -1351,12 +1351,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                   <TriangleAlert className="size-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-foreground text-xs uppercase tracking-wide">Action needed</div>
-                  <div className="text-sm sm:text-lg text-foreground font-semibold mt-1 break-words">
+                  <div className="text-foreground text-xs sm:text-sm uppercase tracking-wide">Action needed</div>
+                  <div className="text-sm sm:text-xl text-foreground font-semibold mt-1 break-words">
                     {nextRequiredActionInfo.title}
                   </div>
                   {nextRequiredActionInfo.subtitle ? (
-                    <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
+                    <div className="text-xs sm:text-base text-muted-foreground mt-1 break-words">
                       {nextRequiredActionInfo.subtitle}
                     </div>
                   ) : null}
@@ -1365,7 +1365,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             </div>
 
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
-              <h3 className="text-foreground mb-3 text-sm sm:text-base">Notifications</h3>
+              <h3 className="text-foreground mb-3 text-sm sm:text-xl">Notifications</h3>
               <div className="space-y-3">
                 <div className="p-3 sm:p-4 border border-border rounded-md bg-muted/30">
                   <div className="flex items-start gap-2 sm:gap-3">
@@ -1373,8 +1373,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       <TriangleAlert className="size-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-foreground font-semibold text-sm">Next step</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
+                      <div className="text-foreground font-semibold text-sm sm:text-base">Next step</div>
+                      <div className="text-xs sm:text-base text-muted-foreground mt-1 break-words">
                         {nextRequiredActionInfo.title}{' '}
                         {nextRequiredActionInfo.subtitle ? nextRequiredActionInfo.subtitle : ''}
                       </div>
@@ -1385,24 +1385,24 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             </div>
 
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
-              <h3 className="text-foreground mb-3 text-sm sm:text-base">Shipment Details</h3>
-              <div className="space-y-2.5 text-sm">
+              <h3 className="text-foreground mb-3 text-sm sm:text-xl">Shipment Details</h3>
+              <div className="space-y-2.5">
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground text-xs sm:text-sm">Container Count</span>
-                  <span className="text-foreground text-xs sm:text-sm">{detail?.cargo.container_count ?? 0}</span>
+                  <span className="text-muted-foreground text-xs sm:text-base">Container Count</span>
+                  <span className="text-foreground text-xs sm:text-base">{detail?.cargo.container_count ?? 0}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground text-xs sm:text-sm">Arrival Date</span>
-                  <span className="text-foreground text-xs sm:text-sm text-right">{detail?.cargo.expected_arrival_date ?? '—'}</span>
+                  <span className="text-muted-foreground text-xs sm:text-base">Arrival Date</span>
+                  <span className="text-foreground text-xs sm:text-base text-right">{detail?.cargo.expected_arrival_date ?? '—'}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground text-xs sm:text-sm">ETA</span>
-                  <span className="text-foreground text-xs sm:text-sm text-right">{detail?.cargo.eta ?? '—'}</span>
+                  <span className="text-muted-foreground text-xs sm:text-base">ETA</span>
+                  <span className="text-foreground text-xs sm:text-base text-right">{detail?.cargo.eta ?? '—'}</span>
                 </div>
                 {slaHint && (
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground text-xs sm:text-sm">SLA</span>
-                    <span className={`text-xs sm:text-sm text-right ${slaHint.tone === 'risk' ? 'text-[#b45309]' : 'text-foreground'}`}>
+                    <span className="text-muted-foreground text-xs sm:text-base">SLA</span>
+                    <span className={`text-xs sm:text-base text-right ${slaHint.tone === 'risk' ? 'text-[#b45309]' : 'text-foreground'}`}>
                       {slaHint.label.replace(/^SLA:\s*/, '')}
                     </span>
                   </div>
