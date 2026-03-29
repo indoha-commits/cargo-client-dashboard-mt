@@ -977,9 +977,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                               {(status as string) === 'not_available'
                                 ? 'Not available for this shipment'
-                                : doc?.uploadedDate
-                                  ? `Uploaded ${doc.uploadedDate}`
-                                  : 'Not uploaded'}
+                                : doc?.driveUrl
+                                  ? doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Uploaded'
+                                  : status === 'verified'
+                                    ? doc?.uploadedDate ? `Verified by ops · ${doc.uploadedDate}` : 'Verified by ops'
+                                    : 'Not uploaded'}
                             </div>
                             {status === 'rejected' && (
                               <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs text-destructive">
@@ -1050,17 +1052,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               <Download className="size-3 mr-1.5" />
                               View / Download
                             </button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-muted-foreground hover:text-foreground text-xs h-8"
-                              disabled
-                            >
-                              <Download className="size-3 mr-1.5" />
-                              View
-                            </Button>
-                          )}
+                          ) : status === 'verified' ? (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Check className="size-3 text-emerald-500" />
+                              Verified by Ops
+                            </span>
+                          ) : null}
                         </div>
                         )}
                       </div>
@@ -1153,7 +1150,13 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         <div className="flex-1 min-w-0">
                           <div className="text-foreground text-sm sm:text-base font-medium">{docDisplayName(docType)}</div>
                           <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            {isNotAvailable ? 'Not available for this shipment' : doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'No file uploaded yet'}
+                            {isNotAvailable
+                              ? 'Not available for this shipment'
+                              : doc?.driveUrl
+                                ? doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Uploaded'
+                                : status === 'verified'
+                                  ? doc?.uploadedDate ? `Verified by ops · ${doc.uploadedDate}` : 'Verified by ops'
+                                  : 'No file uploaded yet'}
                           </div>
                         </div>
                         <div className="shrink-0">
@@ -1182,12 +1185,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             <Download className="size-3 mr-1.5" />
                             View / Download
                           </button>
-                        ) : (
-                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground text-xs h-8" disabled>
-                            <Download className="size-3 mr-1.5" />
-                            View
-                          </Button>
-                        )}
+                        ) : status === 'verified' ? (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Check className="size-3 text-emerald-500" />
+                            Verified by Ops
+                          </span>
+                        ) : null}
                       </div>
                       )}
                     </div>
