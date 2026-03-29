@@ -623,11 +623,13 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       return { total: 0, uploaded: 0, verified: 0 };
     }
     const hasDocsApproved = timelineEvents?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false;
+    const hasEvents = timelineEvents?.length > 0;
     return requiredDocs.reduce(
       (acc, docType) => {
         const doc = documentsByType[docType]?.[0];
         const effectiveStatus = hasDocsApproved && doc?.status === 'uploaded' ? 'verified' : doc?.status;
-        if (effectiveStatus === 'verified' || (effectiveStatus as string) === 'not_available') acc.verified += 1;
+        const isNotAvailable = (effectiveStatus as string) === 'not_available';
+        if (effectiveStatus === 'verified' || (isNotAvailable && hasEvents)) acc.verified += 1;
         if (effectiveStatus === 'uploaded') acc.uploaded += 1;
         acc.total += 1;
         return acc;
@@ -948,7 +950,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 </div>
                 <div className="text-xs sm:text-base text-muted-foreground sm:text-right shrink-0">
                   {uploadProgress.total > 0
-                    ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
+                    ? uploadProgress.uploaded > 0
+                      ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
+                      : `${uploadProgress.verified}/${uploadProgress.total} verified`
                     : '—'}
                 </div>
               </div>
