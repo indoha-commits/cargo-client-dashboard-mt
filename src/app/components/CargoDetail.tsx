@@ -950,7 +950,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 </div>
                 <div className="text-xs sm:text-base text-muted-foreground sm:text-right shrink-0">
                   {uploadProgress.total > 0
-                    ? detail?.cargo.is_import
+                    ? (detail?.cargo.is_import || uploadProgress.uploaded === 0)
                       ? `${uploadProgress.verified}/${uploadProgress.total} verified`
                       : `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
                     : '—'}
@@ -1143,7 +1143,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               )}
 
               <div className="space-y-2 sm:space-y-3">
-                {opsDocs.map(({ docType, doc }) => {
+                {opsDocs.filter(({ doc }) => doc !== null).map(({ docType, doc }) => {
                   const status = mapDocStatus(doc?.status ?? 'pending');
                   const isNotAvailable = (status as string) === 'not_available';
                   return (
@@ -1194,9 +1194,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                   );
                 })}
 
-                {approvals.length === 0 ? (
+                {approvals.length === 0 && opsDocs.filter(({ doc }) => doc !== null).length === 0 ? (
                   <div className="text-sm text-muted-foreground">No drafts or assessments have been shared yet.</div>
-                ) : (
+                ) : approvals.length === 0 ? null : (
                   approvals.map((a) => (
                     <div key={a.id} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
