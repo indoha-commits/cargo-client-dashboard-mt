@@ -950,9 +950,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 </div>
                 <div className="text-xs sm:text-base text-muted-foreground sm:text-right shrink-0">
                   {uploadProgress.total > 0
-                    ? uploadProgress.uploaded > 0
-                      ? `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
-                      : `${uploadProgress.verified}/${uploadProgress.total} verified`
+                    ? detail?.cargo.is_import
+                      ? `${uploadProgress.verified}/${uploadProgress.total} verified`
+                      : `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
                     : '—'}
                 </div>
               </div>

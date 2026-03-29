@@ -88,13 +88,14 @@ export type ClientCargoDetail = {
     expected_arrival_date: string | null;
     eta: string | null;
     created_at: string;
-    origin?: string | null;
-    destination?: string | null;
-    route?: string | null;
-    vessel?: string | null;
-    category?: string | null;
-    bill_of_lading?: string | null;
-    bill_of_lading_group?: string | null;
+    origin: string | null;
+    destination: string | null;
+    route: string | null;
+    vessel: string | null;
+    category: string | null;
+    bill_of_lading: string | null;
+    bill_of_lading_group: string | null;
+    is_import: boolean;
   };
   projection: {
     next_required_action: string;
