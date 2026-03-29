@@ -888,11 +888,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <button
               type="button"
               onClick={onToggleTheme}
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors ${
-                theme === 'dark' ? 'hidden' : 'inline-flex'
-              }`}
+              className="px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors inline-flex"
             >
-              Dark mode
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
           </div>
         </div>
