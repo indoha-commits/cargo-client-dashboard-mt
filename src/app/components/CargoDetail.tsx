@@ -585,7 +585,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     }, {});
     Object.values(grouped).forEach((list) => {
       list.sort((a, b) => {
-        const rank = (s: UiDocument['status']) => (s === 'verified' ? 2 : s === 'uploaded' ? 1 : 0);
+        const rank = (s: UiDocument['status']) => (s === 'verified' ? 3 : s === 'uploaded' ? 2 : (s as string) === 'not_available' ? 1 : 0);
         const r = rank(b.status) - rank(a.status);
         if (r !== 0) return r;
         return (b.uploadedDate ?? '').localeCompare(a.uploadedDate ?? '');
@@ -627,7 +627,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       (acc, docType) => {
         const doc = documentsByType[docType]?.[0];
         const effectiveStatus = hasDocsApproved && doc?.status === 'uploaded' ? 'verified' : doc?.status;
-        if (effectiveStatus === 'verified') acc.verified += 1;
+        if (effectiveStatus === 'verified' || (effectiveStatus as string) === 'not_available') acc.verified += 1;
         if (effectiveStatus === 'uploaded') acc.uploaded += 1;
         acc.total += 1;
         return acc;
@@ -958,7 +958,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 ) : (
                   requiredDocs.map((docType) => {
                     const doc = documentsByType[docType]?.[0];
-                    const status = doc?.status ?? 'pending';
+                    const status = mapDocStatus(doc?.status ?? 'pending');
                     const name = doc?.name ?? formatCategoryLabel(docType);
                     return (
                       <div
@@ -977,7 +977,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   ? `Uploaded ${doc.uploadedDate}`
                                   : 'Not uploaded'}
                             </div>
-                            {doc?.status === 'rejected' && (
+                            {status === 'rejected' && (
                               <div className="mt-1.5 flex flex-wrap items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs text-destructive">
                                 <TriangleAlert className="size-3 shrink-0" />
                                 <span className="font-medium">Rejected:</span>
@@ -1140,8 +1140,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
               <div className="space-y-2 sm:space-y-3">
                 {opsDocs.map(({ docType, doc }) => {
-                  const status = doc?.status ?? 'pending';
-                  const isNotAvailable = status === 'NOT_AVAILABLE';
+                  const status = mapDocStatus(doc?.status ?? 'pending');
+                  const isNotAvailable = (status as string) === 'not_available';
                   return (
                     <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
@@ -1153,9 +1153,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           </div>
                         </div>
                         <div className="shrink-0">
-                          {status === 'VERIFIED' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
-                          {status === 'UPLOADED' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
-                          {status === 'REJECTED' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
+                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
+                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
+                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
                           {isNotAvailable && <Badge className="bg-[#6b7280] text-white rounded-sm text-xs">Not Available</Badge>}
                           {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs">Pending</Badge>}
                         </div>
