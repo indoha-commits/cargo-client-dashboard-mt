@@ -1141,6 +1141,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               <div className="space-y-2 sm:space-y-3">
                 {opsDocs.map(({ docType, doc }) => {
                   const status = doc?.status ?? 'pending';
+                  const isNotAvailable = status === 'NOT_AVAILABLE';
                   return (
                     <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
@@ -1148,16 +1149,18 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         <div className="flex-1 min-w-0">
                           <div className="text-foreground text-sm sm:text-base font-medium">{docDisplayName(docType)}</div>
                           <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                            {doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'No file uploaded yet'}
+                            {isNotAvailable ? 'Not available for this shipment' : doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'No file uploaded yet'}
                           </div>
                         </div>
                         <div className="shrink-0">
-                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
-                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
-                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
+                          {status === 'VERIFIED' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
+                          {status === 'UPLOADED' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
+                          {status === 'REJECTED' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
+                          {isNotAvailable && <Badge className="bg-[#6b7280] text-white rounded-sm text-xs">Not Available</Badge>}
                           {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs">Pending</Badge>}
                         </div>
                       </div>
+                      {!isNotAvailable && (
                       <div className="flex justify-end">
                         {doc?.driveUrl ? (
                           <button
@@ -1182,6 +1185,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           </Button>
                         )}
                       </div>
+                      )}
                     </div>
                   );
                 })}
