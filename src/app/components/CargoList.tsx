@@ -345,11 +345,9 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
             <button
               type="button"
               onClick={onToggleTheme}
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors ${
-                theme === 'dark' ? 'hidden' : 'inline-flex'
-              }`}
+              className="px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm border border-primary-foreground/30 text-primary-foreground text-xs sm:text-sm hover:bg-primary-foreground/10 transition-colors inline-flex"
             >
-              Dark mode
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
             <button
               onClick={onLogout}
@@ -583,12 +581,12 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableHead className="text-foreground">Container</TableHead>
-                <TableHead className="text-foreground">Route</TableHead>
-                <TableHead className="text-foreground">Vessel</TableHead>
-                <TableHead className="text-foreground">Status</TableHead>
-                <TableHead className="text-foreground">ETA</TableHead>
-                <TableHead className="text-foreground">Last Update</TableHead>
+                <TableHead className="text-foreground text-base">Container</TableHead>
+                <TableHead className="text-foreground text-base">Route</TableHead>
+                <TableHead className="text-foreground text-base">Vessel</TableHead>
+                <TableHead className="text-foreground text-base">Status</TableHead>
+                <TableHead className="text-foreground text-base">ETA</TableHead>
+                <TableHead className="text-foreground text-base">Last Update</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -607,11 +605,11 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {cargo.isGroupRow ? (
-                        <Package className="size-4 text-muted-foreground" />
+                        <Package className="size-5 text-muted-foreground" />
                       ) : (
-                        <Container className="size-4 text-muted-foreground" />
+                        <Container className="size-5 text-muted-foreground" />
                       )}
-                      <span className="text-foreground">{cargo.referenceNumber}</span>
+                      <span className="text-foreground text-base">{cargo.referenceNumber}</span>
                       {cargo.isGroupRow && (
                         <span className="text-muted-foreground">
                           {expandedGroups.has(cargo.groupKey) ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -620,33 +618,33 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-foreground">
+                    <div className="text-foreground text-base">
                       {(cargo.origin ?? 'Mombasa, KN')} → {(cargo.destination ?? 'Kigali, RW')}
                     </div>
                   </TableCell>
-                  <TableCell className="text-foreground">{cargo.vessel ?? 'MSC'}</TableCell>
+                  <TableCell className="text-foreground text-base">{cargo.vessel ?? 'MSC'}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1 w-fit`}>
+                      <Badge className={`${statusConfig[cargo.status].color} rounded-sm px-2 py-1 w-fit text-sm`}>
                         {cargo.statusLabel}
                       </Badge>
                       {cargo.isGroupRow && cargo.completionLabel && (
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
                           <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5">
                             {cargo.completionLabel}
                           </span>
                         </div>
                       )}
                       {!cargo.isGroupRow && cargo.completionLabel && (
-                        <span className="text-xs text-muted-foreground">{cargo.completionLabel}</span>
+                        <span className="text-sm text-muted-foreground">{cargo.completionLabel}</span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-foreground">{cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</TableCell>
+                  <TableCell className="text-foreground text-base">{cargo.eta ?? cargo.expectedArrivalDate ?? '—'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="size-4" />
-                      <span>{formatRelativeTime(cargo.lastUpdate)}</span>
+                      <span className="text-base">{formatRelativeTime(cargo.lastUpdate)}</span>
                     </div>
                   </TableCell>
                 </TableRow>
