@@ -971,10 +971,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       >
                         {/* Top row: icon + name + badge */}
                         <div className="flex items-start gap-2">
-                          <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
+                          <FileText className="size-4 sm:size-6 text-muted-foreground shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-foreground text-sm sm:text-base font-medium">{name}</div>
-                            <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                            <div className="text-foreground text-sm sm:text-lg font-medium">{name}</div>
+                            <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
                               {(status as string) === 'not_available'
                                 ? 'Not available for this shipment'
                                 : doc?.driveUrl
@@ -995,22 +995,22 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           </div>
                           <div className="shrink-0">
                             {status === 'verified' && (
-                              <Badge className="bg-[#10b981] text-white rounded-sm text-xs">
+                              <Badge className="bg-[#10b981] text-white rounded-sm text-xs sm:text-sm">
                                 <Check className="size-3 mr-1" />
                                 Verified
                               </Badge>
                             )}
                             {status === 'uploaded' && (
-                              <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>
+                              <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs sm:text-sm">Uploaded</Badge>
                             )}
                             {status === 'rejected' && (
-                              <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>
+                              <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>
                             )}
                             {(status as string) === 'not_available' && (
-                              <Badge className="bg-[#6b7280] text-white rounded-sm text-xs">Not Available</Badge>
+                              <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>
                             )}
                             {status === 'pending' && (
-                              <Badge className="bg-muted text-foreground rounded-sm text-xs">Required</Badge>
+                              <Badge className="bg-muted text-foreground rounded-sm text-xs sm:text-sm">Required</Badge>
                             )}
                           </div>
                         </div>
@@ -1021,7 +1021,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-border text-foreground hover:bg-muted/60 text-xs h-8"
+                              className="border-border text-foreground hover:bg-muted/60 text-xs sm:text-sm sm:h-9"
                               onClick={() => handleUploadClick(docType, doc?.id ?? null)}
                               disabled={!workersEnabled || isUploading === docType}
                             >
@@ -1047,14 +1047,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   alert(String(e));
                                 }
                               }}
-                              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
+                              className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                             >
-                              <Download className="size-3 mr-1.5" />
+                              <Download className="size-3 sm:size-4 mr-1.5" />
                               View / Download
                             </button>
                           ) : status === 'verified' ? (
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Check className="size-3 text-emerald-500" />
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                              <Check className="size-3 sm:size-4 text-emerald-500" />
                               Verified by Ops
                             </span>
                           ) : null}
@@ -1146,10 +1146,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                   return (
                     <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
-                        <FileText className="size-4 sm:size-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <FileText className="size-4 sm:size-6 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground text-sm sm:text-base font-medium">{docDisplayName(docType)}</div>
-                          <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                          <div className="text-foreground text-sm sm:text-lg font-medium">{docDisplayName(docType)}</div>
+                          <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
                             {isNotAvailable
                               ? 'Not available for this shipment'
                               : doc?.driveUrl
@@ -1160,11 +1160,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           </div>
                         </div>
                         <div className="shrink-0">
-                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs">Verified</Badge>}
-                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>}
-                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>}
-                          {isNotAvailable && <Badge className="bg-[#6b7280] text-white rounded-sm text-xs">Not Available</Badge>}
-                          {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs">Pending</Badge>}
+                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs sm:text-sm">Verified</Badge>}
+                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs sm:text-sm">Uploaded</Badge>}
+                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>}
+                          {isNotAvailable && <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>}
+                          {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs sm:text-sm">Pending</Badge>}
                         </div>
                       </div>
                       {!isNotAvailable && (
@@ -1180,14 +1180,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                 alert(String(e));
                               }
                             }}
-                            className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
+                            className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                           >
-                            <Download className="size-3 mr-1.5" />
+                            <Download className="size-3 sm:size-4 mr-1.5" />
                             View / Download
                           </button>
                         ) : status === 'verified' ? (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Check className="size-3 text-emerald-500" />
+                          <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                            <Check className="size-3 sm:size-4 text-emerald-500" />
                             Verified by Ops
                           </span>
                         ) : null}
