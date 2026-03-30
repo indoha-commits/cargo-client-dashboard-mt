@@ -85,6 +85,8 @@ function docDisplayName(documentType: string): string {
       return 'Type Approval';
     case 'T1':
       return 'T1';
+    case 'IM4':
+      return 'IM4 Document';
     case 'WH7_DOC':
       return 'WH7 Document';
     case 'EXIT_NOTE':
@@ -555,7 +557,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1'];
+  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1', 'IM4'];
   const hasDocsApproved = useMemo(
     () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
     [detail?.events]
