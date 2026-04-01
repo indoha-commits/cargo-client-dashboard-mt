@@ -166,6 +166,10 @@ export async function getClientApprovalSignedUrl(approvalId: string): Promise<{ 
   );
 }
 
+export async function getClientDocumentsBulkSignedUrls(cargoId: string): Promise<{ documents: Array<{ id: string; document_type: string; name: string; url: string }> }> {
+  return fetchJson(`/client/cargo/${encodeURIComponent(cargoId)}/documents/signed-urls`);
+}
+
 export async function getClientDocumentSignedUrl(documentId: string): Promise<{ url: string; kind: 'storage' | 'drive' }> {
   return await fetchJson<{ url: string; kind: 'storage' | 'drive' }>(
     `/client/documents/${encodeURIComponent(documentId)}/signed-url`,

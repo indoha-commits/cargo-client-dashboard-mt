@@ -21,6 +21,7 @@ import {
   getClientCargoApprovals,
   getClientCargoDetail,
   getClientDocumentSignedUrl,
+  getClientDocumentsBulkSignedUrls,
   rejectClientCargoApproval,
   type CargoApproval,
   insertClientDocument,
@@ -84,7 +85,7 @@ function docDisplayName(documentType: string): string {
     case 'TYPE_APPROVAL':
       return 'Type Approval';
     case 'T1':
-      return 'T1';
+      return 'T1 Document';
     case 'IM4':
       return 'IM4 Document';
     case 'WH7_DOC':
@@ -557,7 +558,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'T1', 'IM4'];
+  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'IM4'];
   const hasDocsApproved = useMemo(
     () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
     [detail?.events]
@@ -940,7 +941,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div className="min-w-0">
                   <h3 className="text-foreground text-sm sm:text-xl">Required Documents</h3>
-                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex flex-col sm:flex-row sm:items-center gap-2">
                     {detail?.cargo.category
                       ? `Category: ${formatCategoryLabel(detail.cargo.category)}`
                       : 'Category not set'}
@@ -948,12 +949,43 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                     {detail?.cargo.bill_of_lading_group ? ' · Applies to all containers.' : ''}
                   </div>
                 </div>
-                <div className="text-xs sm:text-base text-muted-foreground sm:text-right shrink-0">
-                  {uploadProgress.total > 0
-                    ? (detail?.cargo.is_import || uploadProgress.uploaded === 0)
-                      ? `${uploadProgress.verified}/${uploadProgress.total} verified`
-                      : `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
-                    : '—'}
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-xs sm:text-base text-muted-foreground">
+                    {uploadProgress.total > 0
+                      ? (detail?.cargo.is_import || uploadProgress.uploaded === 0)
+                        ? `${uploadProgress.verified}/${uploadProgress.total} verified`
+                        : `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
+                      : '—'}
+                  </div>
+                  {/* Download All — shown when all docs are verified */}
+                  {uploadProgress.verified > 0 && uploadProgress.verified === uploadProgress.total && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const { documents } = await getClientDocumentsBulkSignedUrls(cargoId);
+                          if (!documents?.length) { alert('No downloadable documents found.'); return; }
+                          for (const doc of documents) {
+                            const a = document.createElement('a');
+                            a.href = doc.url;
+                            a.target = '_blank';
+                            a.rel = 'noreferrer';
+                            a.download = `${doc.document_type}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            await new Promise((r) => setTimeout(r, 300));
+                          }
+                        } catch (e) {
+                          alert(String(e));
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespace-nowrap"
+                    >
+                      <Download className="size-3 sm:size-4" />
+                      Download All
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="space-y-2 sm:space-y-3">
