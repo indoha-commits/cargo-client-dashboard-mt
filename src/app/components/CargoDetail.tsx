@@ -371,6 +371,22 @@ function computeSlaHint(
   };
 }
 
+// Helper function to download a file without popup
+async function downloadFileBlob(url: string, filename: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Download failed');
+  
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
 export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDetailProps) {
   const workersEnabled = (import.meta.env.VITE_WORKERS_ENABLED ?? 'true') === 'true';
 
@@ -963,27 +979,46 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       type="button"
                       onClick={async () => {
                         try {
-                          const { documents } = await getClientDocumentsBulkSignedUrls(cargoId);
-                          if (!documents?.length) { alert('No downloadable documents found.'); return; }
-                          for (const doc of documents) {
-                            const a = document.createElement('a');
-                            a.href = doc.url;
-                            a.target = '_blank';
-                            a.rel = 'noreferrer';
-                            a.download = `${doc.document_type}.pdf`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            await new Promise((r) => setTimeout(r, 300));
+                          // Download ZIP file directly from the backend
+                          const token = localStorage.getItem('authToken');
+                          if (!token) {
+                            alert('Authentication token missing');
+                            return;
                           }
+                          
+                          const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://cargo-api-worker-mt.indoha.workers.dev';
+                          const url = `${apiBase}/client/cargo/${encodeURIComponent(cargoId)}/documents/signed-urls`;
+                          
+                          const response = await fetch(url, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          
+                          if (!response.ok) {
+                            const error = await response.json().catch(() => ({ error: 'download_failed' }));
+                            alert(`Failed to download: ${error.error || response.statusText}`);
+                            return;
+                          }
+                          
+                          // Get the ZIP file blob
+                          const blob = await response.blob();
+                          
+                          // Create download link
+                          const downloadUrl = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = downloadUrl;
+                          a.download = `${cargoId}_documents.zip`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          window.URL.revokeObjectURL(downloadUrl);
                         } catch (e) {
-                          alert(String(e));
+                          alert(`Download error: ${String(e)}`);
                         }
                       }}
                       className="inline-flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespace-nowrap"
                     >
                       <Download className="size-3 sm:size-4" />
-                      Download All
+                      Download All (ZIP)
                     </button>
                   )}
                 </div>
@@ -1074,7 +1109,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               onClick={async () => {
                                 try {
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
-                                  window.open(url, '_blank', 'noreferrer');
+                                  await downloadFileBlob(url, `${doc.documentType}.pdf`);
                                 } catch (e) {
                                   alert(String(e));
                                 }
@@ -1082,7 +1117,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                             >
                               <Download className="size-3 sm:size-4 mr-1.5" />
-                              View / Download
+                              Download
                             </button>
                           ) : status === 'verified' ? (
                             <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
@@ -1140,7 +1175,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         onClick={async () => {
                           try {
                             const { url } = await getClientDocumentSignedUrl(t1Doc.id);
-                            window.open(url, '_blank', 'noreferrer');
+                            await downloadFileBlob(url, `T1_Document.pdf`);
                           } catch (e) {
                             alert(String(e));
                           }
@@ -1148,7 +1183,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
                       >
                         <Download className="size-3 mr-1.5" />
-                        View / Download
+                        Download
                       </button>
                     )}
                   </div>
@@ -1207,7 +1242,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             onClick={async () => {
                               try {
                                 const { url } = await getClientDocumentSignedUrl(doc.id);
-                                window.open(url, '_blank', 'noreferrer');
+                                await downloadFileBlob(url, `${doc.documentType}.pdf`);
                               } catch (e) {
                                 alert(String(e));
                               }
@@ -1215,7 +1250,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
                           >
                             <Download className="size-3 sm:size-4 mr-1.5" />
-                            View / Download
+                            Download
                           </button>
                         ) : status === 'verified' ? (
                           <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
@@ -1252,7 +1287,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           onClick={async () => {
                             try {
                               const { url } = await getClientApprovalSignedUrl(a.id);
-                              window.open(url, '_blank', 'noreferrer');
+                              await downloadFileBlob(url, `${a.kind}_approval.pdf`);
                             } catch (e) {
                               alert(String(e));
                             }
