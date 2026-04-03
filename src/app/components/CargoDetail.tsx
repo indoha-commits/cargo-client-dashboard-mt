@@ -979,18 +979,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       type="button"
                       onClick={async () => {
                         try {
-                          // Download ZIP file directly from the backend
-                          const token = localStorage.getItem('authToken');
-                          if (!token) {
-                            alert('Authentication token missing');
-                            return;
-                          }
+                          const { getBaseUrl, getAuthHeader } = await import('../api/http');
                           
-                          const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://cargo-api-worker-mt.indoha.workers.dev';
-                          const url = `${apiBase}/client/cargo/${encodeURIComponent(cargoId)}/documents/signed-urls`;
+                          const url = `${getBaseUrl()}/client/cargo/${encodeURIComponent(cargoId)}/documents/signed-urls`;
                           
                           const response = await fetch(url, {
-                            headers: { Authorization: `Bearer ${token}` },
+                            headers: getAuthHeader(),
                           });
                           
                           if (!response.ok) {
@@ -1109,7 +1103,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               onClick={async () => {
                                 try {
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
-                                  await downloadFileBlob(url, `${doc.documentType}.pdf`);
+                                  const filename = `${docDisplayName(doc.type)}.pdf`;
+                                  await downloadFileBlob(url, filename);
                                 } catch (e) {
                                   alert(String(e));
                                 }
@@ -1242,7 +1237,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             onClick={async () => {
                               try {
                                 const { url } = await getClientDocumentSignedUrl(doc.id);
-                                await downloadFileBlob(url, `${doc.documentType}.pdf`);
+                                const filename = `${docDisplayName(doc.type)}.pdf`;
+                                await downloadFileBlob(url, filename);
                               } catch (e) {
                                 alert(String(e));
                               }
