@@ -16,4 +16,28 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    // Fix MIME type issues with browser caching
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+    // Ensure proper MIME types for modules
+    fs: {
+      strict: false,
+    },
+  },
+  build: {
+    // Ensure proper module output
+    modulePreload: {
+      polyfill: true,
+    },
+    // Better cache busting
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name].[hash].js`,
+        chunkFileNames: `assets/[name].[hash].js`,
+        assetFileNames: `assets/[name].[hash].[ext]`,
+      },
+    },
+  },
 })
