@@ -330,7 +330,7 @@ export function CargoList({ onSelectCargo, onLogout, onToggleTheme, theme }: Car
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen h-full overflow-y-auto bg-background text-foreground">
       <header className="bg-[#0F1117] text-white border-b border-border">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">

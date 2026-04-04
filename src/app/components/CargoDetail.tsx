@@ -759,7 +759,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen h-full overflow-y-auto bg-background text-foreground">
       {/* Hidden file input used by the upload modal */}
       <input
         ref={fileInputRef}
