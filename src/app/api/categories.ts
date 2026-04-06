@@ -11,12 +11,12 @@ const CATEGORY_SPECIFIC_DOCS: Record<CargoCategory, string[]> = {
   MEDS_BEVERAGE: ['IMPORT_LICENSE'],
 };
 
-// Clearance pathway documents
+// Clearance pathway documents (client uploads)
 const PATHWAY_DOCS: Record<ClearancePathway, string[]> = {
-  // Pay tax at port
-  PORT_CLEARANCE: ['WH7', 'DRAFT_DECLARATION', 'ASSESSMENT', 'EXIT_NOTE'],
-  // Pay tax after transport (deferred) - also needs EXIT_NOTE when container leaves
-  T1_TRANSIT: ['T1_FORM', 'IM8_FORM', 'EXIT_NOTE'],
+  // Pay tax at port - WH7, Draft, Assessment, Exit Note, IM8 uploaded by ops in validation queue
+  PORT_CLEARANCE: [],
+  // Pay tax after transport - Exit Note, IM4 uploaded by ops in validation queue
+  T1_TRANSIT: ['T1_FORM'],
 };
 
 export function requiredDocsForCategory(category: CargoCategory, pathway?: ClearancePathway): string[] {
