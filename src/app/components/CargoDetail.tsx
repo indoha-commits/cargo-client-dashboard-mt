@@ -12,6 +12,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Toast, ToastType } from './Toast';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { requiredDocsForCategory, formatLabel as formatCategoryLabel } from '../api/categories';
@@ -403,6 +404,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [selectedContainerId, setSelectedContainerId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // Toast notifications
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const showToast = (message: string, type: ToastType = 'error') => {
+    setToast({ message, type });
+  };
 
   // Fetch initial cargo detail and approvals
   useEffect(() => {
@@ -581,9 +588,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   );
   const requiredDocs = useMemo(() => {
     if (!detail?.cargo.category) return [] as string[];
-    const docs = requiredDocsForCategory(detail.cargo.category as any);
+    const pathway = detail.cargo.clearance_pathway || 'PORT_CLEARANCE';
+    const docs = requiredDocsForCategory(detail.cargo.category as any, pathway);
     return docs.filter((doc) => !opsDocTypes.includes(doc));
-  }, [detail?.cargo.category, opsDocTypes]);
+  }, [detail?.cargo.category, detail?.cargo.clearance_pathway, opsDocTypes]);
 
   const documentsByType = useMemo(() => {
     if (!detail) return {} as Record<string, UiDocument[]>;
@@ -714,7 +722,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
   const handleUploadClick = (docType: string, replaceDocId?: string | null) => {
     if (!workersEnabled) {
-      window.alert('Uploads are disabled in preview mode.');
+      showToast('Uploads are disabled in preview mode.', 'info');
       return;
     }
     setUploadError(null);
@@ -989,7 +997,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           
                           if (!response.ok) {
                             const error = await response.json().catch(() => ({ error: 'download_failed' }));
-                            alert(`Failed to download: ${error.error || response.statusText}`);
+                            showToast(`Failed to download documents: ${error.error || response.statusText}`);
                             return;
                           }
                           
@@ -1005,8 +1013,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           a.click();
                           document.body.removeChild(a);
                           window.URL.revokeObjectURL(downloadUrl);
+                          showToast('Documents downloaded successfully!', 'success');
                         } catch (e) {
-                          alert(`Download error: ${String(e)}`);
+                          showToast(`Download error: ${String(e)}`);
                         }
                       }}
                       className="inline-flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespace-nowrap"
@@ -1105,8 +1114,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
                                   const filename = `${docDisplayName(doc.type)}.pdf`;
                                   await downloadFileBlob(url, filename);
+                                  showToast('Document downloaded successfully!', 'success');
                                 } catch (e) {
-                                  alert(String(e));
+                                  showToast(`Failed to download document: ${String(e)}`);
                                 }
                               }}
                               className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
@@ -1171,8 +1181,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           try {
                             const { url } = await getClientDocumentSignedUrl(t1Doc.id);
                             await downloadFileBlob(url, `T1_Document.pdf`);
+                            showToast('T1 Document downloaded successfully!', 'success');
                           } catch (e) {
-                            alert(String(e));
+                            showToast(`Failed to download T1 document: ${String(e)}`);
                           }
                         }}
                         className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
@@ -1239,8 +1250,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                                 const { url } = await getClientDocumentSignedUrl(doc.id);
                                 const filename = `${docDisplayName(doc.type)}.pdf`;
                                 await downloadFileBlob(url, filename);
+                                showToast('Document downloaded successfully!', 'success');
                               } catch (e) {
-                                alert(String(e));
+                                showToast(`Failed to download document: ${String(e)}`);
                               }
                             }}
                             className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
@@ -1284,8 +1296,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             try {
                               const { url } = await getClientApprovalSignedUrl(a.id);
                               await downloadFileBlob(url, `${a.kind}_approval.pdf`);
+                              showToast('Approval document downloaded successfully!', 'success');
                             } catch (e) {
-                              alert(String(e));
+                              showToast(`Failed to download approval: ${String(e)}`);
                             }
                           }}
                           className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
@@ -1486,6 +1499,15 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
           </div>
         </div>
       </div>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

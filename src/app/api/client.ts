@@ -93,6 +93,7 @@ export type ClientCargoDetail = {
     route: string | null;
     vessel: string | null;
     category: string | null;
+    clearance_pathway: 'PORT_CLEARANCE' | 'T1_TRANSIT' | null;
     bill_of_lading: string | null;
     bill_of_lading_group: string | null;
     is_import: boolean;
