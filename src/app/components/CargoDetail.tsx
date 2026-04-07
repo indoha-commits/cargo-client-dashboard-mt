@@ -377,11 +377,17 @@ async function downloadFileBlob(url: string, filename: string) {
   const response = await fetch(url);
   if (!response.ok) throw new Error('Download failed');
   
+  // Sanitize filename to prevent XSS and path traversal
+  const sanitizedFilename = filename
+    .replace(/[^a-zA-Z0-9._-]/g, '_') // Remove special characters
+    .replace(/^\.+/, '') // Remove leading dots
+    .substring(0, 255); // Limit length
+  
   const blob = await response.blob();
   const downloadUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = downloadUrl;
-  a.download = filename;
+  a.download = sanitizedFilename || 'document.pdf'; // Fallback if empty
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
