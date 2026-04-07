@@ -596,7 +596,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     if (!detail?.cargo.category) return [] as string[];
     const pathway = detail.cargo.clearance_pathway || 'PORT_CLEARANCE';
     const docs = requiredDocsForCategory(detail.cargo.category as any, pathway);
-    return docs.filter((doc) => !opsDocTypes.includes(doc));
+    const filtered = docs.filter((doc) => !opsDocTypes.includes(doc));
+    // For T1_TRANSIT, show T1 form only in the T1 upload card (not in required docs list)
+    return pathway === 'T1_TRANSIT' ? filtered.filter((doc) => doc !== 'T1_FORM') : filtered;
   }, [detail?.cargo.category, detail?.cargo.clearance_pathway, opsDocTypes]);
 
   const documentsByType = useMemo(() => {
