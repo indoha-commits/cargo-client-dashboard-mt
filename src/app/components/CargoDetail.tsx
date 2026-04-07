@@ -635,10 +635,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   }, [documentsByType, opsDocTypes]);
 
   const t1Doc = useMemo(() => {
-    return detail?.documents.find((d) => d.document_type === 'T1') ?? null;
+    return detail?.documents.find((d) => d.document_type === 'T1_FORM') ?? null;
   }, [detail?.documents]);
 
   const hasOpsT1Doc = useMemo(() => {
+    // This checks if ops has uploaded T1 approval (different from client's T1_FORM)
     return detail?.documents.some((d) => d.document_type === 'T1') ?? false;
   }, [detail?.documents]);
 
@@ -1145,11 +1146,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             </div>
 
-            {!hasOpsT1Doc && detail?.cargo.clearance_pathway === 'T1_TRANSIT' && (
+            {detail?.cargo.clearance_pathway === 'T1_TRANSIT' && (
               <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
                   <div className="min-w-0">
-                    <h3 className="text-foreground text-sm sm:text-xl">T1 Cargo Details</h3>
+                    <h3 className="text-foreground text-sm sm:text-xl">T1 Form Upload</h3>
                     <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
                       Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
                     </div>
