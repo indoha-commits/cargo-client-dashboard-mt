@@ -636,6 +636,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     const derived = buildDerivedTimeline(detail, approvals);
     return derived.length ? derived : [];
   }, [detail, approvals]);
+  const lastMilestone = useMemo(() => {
+    if (!timelineEvents.length) return null;
+    return timelineEvents[timelineEvents.length - 1];
+  }, [timelineEvents]);
 
   const uploadProgress = useMemo(() => {
     if (requiredDocs.length === 0) {
@@ -1391,10 +1395,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       <TriangleAlert className="size-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-foreground font-semibold text-sm sm:text-base">Next step</div>
+                      <div className="text-foreground font-semibold text-sm sm:text-base">Last milestone</div>
                       <div className="text-xs sm:text-base text-muted-foreground mt-1 break-words">
-                        {nextRequiredActionInfo.title}{' '}
-                        {nextRequiredActionInfo.subtitle ? nextRequiredActionInfo.subtitle : ''}
+                        {lastMilestone
+                          ? `${lastMilestone.status} · ${lastMilestone.date} ${lastMilestone.time}`
+                          : 'No milestone recorded yet'}
                       </div>
                     </div>
                   </div>
@@ -1405,6 +1410,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <h3 className="text-foreground mb-3 text-sm sm:text-xl">Shipment Details</h3>
               <div className="space-y-2.5">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground text-xs sm:text-base">Last Milestone</span>
+                  <span className="text-foreground text-xs sm:text-base text-right">
+                    {lastMilestone ? `${lastMilestone.status} (${lastMilestone.date} ${lastMilestone.time})` : '—'}
+                  </span>
+                </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground text-xs sm:text-base">Container Count</span>
                   <span className="text-foreground text-xs sm:text-base">{detail?.cargo.container_count ?? 0}</span>

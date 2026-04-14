@@ -97,9 +97,12 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
   const completedCount = s.containers.filter((c) => isCompleted(c.next_required_action)).length;
   const completionLabel = `${completedCount}/${totalContainers} containers complete`;
 
-  const groupStatus = totalContainers === 1
-    ? deriveStatusFromNextAction(s.containers[0]?.next_required_action ?? s.next_required_action)
-    : deriveStatusFromNextAction(s.next_required_action);
+  const allContainersAtWarehouse = totalContainers > 0 && completedCount === totalContainers;
+  const groupStatus = allContainersAtWarehouse
+    ? 'COMPLETE'
+    : totalContainers === 1
+      ? deriveStatusFromNextAction(s.containers[0]?.next_required_action ?? s.next_required_action)
+      : deriveStatusFromNextAction(s.next_required_action);
   const groupRow: CargoRow = {
     id: `${s.bill_of_lading}-group`,
     referenceNumber: s.bill_of_lading,
