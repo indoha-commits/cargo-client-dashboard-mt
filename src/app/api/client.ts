@@ -115,6 +115,8 @@ export type ClientCargoDetail = {
     document_type: string;
     status: string;
     drive_url: string | null;
+    source_storage_path?: string | null;
+    provider_path?: string | null;
     uploaded_at: string | null;
     verified_at: string | null;
     rejection_reason: string | null;

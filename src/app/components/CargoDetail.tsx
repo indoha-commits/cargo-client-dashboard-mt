@@ -42,7 +42,7 @@ type UiDocument = {
   id: string;
   name: string;
   type: string;
-  status: 'uploaded' | 'pending' | 'verified' | 'rejected';
+  status: 'uploaded' | 'pending' | 'verified' | 'rejected' | 'not_available';
   uploadedDate?: string;
   driveUrl?: string;
   rejectionReason?: string;
@@ -67,7 +67,7 @@ function mapDocStatus(status: string): UiDocument['status'] {
   if (status === 'VERIFIED') return 'verified';
   if (status === 'UPLOADED') return 'uploaded';
   if (status === 'REJECTED') return 'rejected';
-  if (status === 'NOT_AVAILABLE') return 'not_available' as any;
+  if (status === 'NOT_AVAILABLE') return 'not_available';
   return 'pending';
 }
 
@@ -587,30 +587,22 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'IM4'];
-  const hasDocsApproved = useMemo(
-    () => detail?.events?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false,
-    [detail?.events]
-  );
+  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'IM4', 'IM7', 'IM8', 'T1'];
   const requiredDocs = useMemo(() => {
     if (!detail?.cargo.category) return [] as string[];
     const pathway = detail.cargo.clearance_pathway || 'PORT_CLEARANCE';
     const docs = requiredDocsForCategory(detail.cargo.category as any, pathway);
-    const filtered = docs.filter((doc) => !opsDocTypes.includes(doc));
-    // For T1_TRANSIT, show T1 form only in the T1 upload card (not in required docs list)
-    return pathway === 'T1_TRANSIT' ? filtered.filter((doc) => doc !== 'T1_FORM') : filtered;
+    return docs.filter((doc) => !opsDocTypes.includes(doc));
   }, [detail?.cargo.category, detail?.cargo.clearance_pathway, opsDocTypes]);
 
   const documentsByType = useMemo(() => {
     if (!detail) return {} as Record<string, UiDocument[]>;
     const grouped = detail.documents.reduce<Record<string, UiDocument[]>>((acc, d) => {
-      const baseStatus = mapDocStatus(d.status);
-      const adjustedStatus = hasDocsApproved && requiredDocs.includes(d.document_type) ? 'verified' : baseStatus;
       const entry: UiDocument = {
         id: d.id,
         name: docDisplayName(d.document_type),
         type: d.document_type,
-        status: adjustedStatus,
+        status: mapDocStatus(d.status),
         uploadedDate: d.uploaded_at ? d.uploaded_at.slice(0, 10) : undefined,
         driveUrl: d.source_storage_path || d.provider_path || d.drive_url || undefined,
         rejectionReason: d.rejection_reason ?? undefined,
@@ -620,7 +612,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     }, {});
     Object.values(grouped).forEach((list) => {
       list.sort((a, b) => {
-        const rank = (s: UiDocument['status']) => (s === 'verified' ? 3 : s === 'uploaded' ? 2 : (s as string) === 'not_available' ? 1 : 0);
+        const rank = (s: UiDocument['status']) => (s === 'verified' ? 3 : s === 'uploaded' ? 2 : s === 'not_available' ? 1 : 0);
         const r = rank(b.status) - rank(a.status);
         if (r !== 0) return r;
         return (b.uploadedDate ?? '').localeCompare(a.uploadedDate ?? '');
@@ -636,15 +628,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     }));
   }, [documentsByType, opsDocTypes]);
 
-  const t1Doc = useMemo(() => {
-    return detail?.documents.find((d) => d.document_type === 'T1_FORM') ?? null;
-  }, [detail?.documents]);
-
-  const hasOpsT1Doc = useMemo(() => {
-    // This checks if ops has uploaded T1 approval (different from client's T1_FORM)
-    return detail?.documents.some((d) => d.document_type === 'T1') ?? false;
-  }, [detail?.documents]);
-
   const timelineEvents: UiTimelineEvent[] = useMemo(() => {
     if (!detail) return [];
     const mapped = mapEventsToTimeline(detail.events);
@@ -658,21 +641,18 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     if (requiredDocs.length === 0) {
       return { total: 0, uploaded: 0, verified: 0 };
     }
-    const hasDocsApproved = timelineEvents?.some((e) => e.event_type === 'ALL_DOCUMENTS_APPROVED') ?? false;
-    const hasEvents = timelineEvents?.length > 0;
     return requiredDocs.reduce(
       (acc, docType) => {
         const doc = documentsByType[docType]?.[0];
-        const effectiveStatus = hasDocsApproved && doc?.status === 'uploaded' ? 'verified' : doc?.status;
-        const isNotAvailable = (effectiveStatus as string) === 'not_available';
-        if (effectiveStatus === 'verified' || (isNotAvailable && hasEvents)) acc.verified += 1;
+        const effectiveStatus = doc?.status;
+        if (effectiveStatus === 'verified') acc.verified += 1;
         if (effectiveStatus === 'uploaded') acc.uploaded += 1;
         acc.total += 1;
         return acc;
       },
       { total: 0, uploaded: 0, verified: 0 }
     );
-  }, [documentsByType, requiredDocs, timelineEvents]);
+  }, [documentsByType, requiredDocs]);
 
   const containers = useMemo(() => {
     if (!detail?.cargo.bill_of_lading_group) return [] as Array<{
@@ -1054,7 +1034,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           <div className="flex-1 min-w-0">
                             <div className="text-foreground text-sm sm:text-lg font-medium">{name}</div>
                             <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
-                              {(status as string) === 'not_available'
+                              {status === 'not_available'
                                 ? 'Not available for this shipment'
                                 : doc?.driveUrl
                                   ? doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Uploaded'
@@ -1085,7 +1065,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                             {status === 'rejected' && (
                               <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>
                             )}
-                            {(status as string) === 'not_available' && (
+                            {status === 'not_available' && (
                               <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>
                             )}
                             {status === 'pending' && (
@@ -1094,7 +1074,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                           </div>
                         </div>
                         {/* Action button row — hidden when not_available */}
-                        {(status as string) !== 'not_available' && (
+                        {status !== 'not_available' && (
                         <div className="flex justify-end">
                           {status === 'pending' || status === 'rejected' ? (
                             <Button
@@ -1148,64 +1128,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               </div>
             </div>
 
-            {detail?.cargo.clearance_pathway === 'T1_TRANSIT' && (
-              <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2 sm:mb-4">
-                  <div className="min-w-0">
-                    <h3 className="text-foreground text-sm sm:text-xl">T1 Form Upload</h3>
-                    <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
-                      Include plate number, driver details, license number, phone, and entry office (Gatuna or Rusumo).
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    {t1Doc?.status === 'VERIFIED' && (
-                      <Badge className="bg-[#10b981] text-white rounded-sm text-xs">
-                        <Check className="size-3 mr-1" />
-                        Verified
-                      </Badge>
-                    )}
-                    {t1Doc?.status === 'UPLOADED' && (
-                      <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs">Uploaded</Badge>
-                    )}
-                    {t1Doc?.status === 'REJECTED' && (
-                      <Badge className="bg-[#ef4444] text-white rounded-sm text-xs">Rejected</Badge>
-                    )}
-                    {!t1Doc?.status && <Badge className="bg-muted text-foreground rounded-sm text-xs">Required</Badge>}
-                    {((t1Doc?.status ?? 'PENDING') === 'PENDING' || t1Doc?.status === 'REJECTED') && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border text-foreground hover:bg-muted/60 text-xs h-8"
-                        onClick={() => handleUploadClick('T1_FORM', t1Doc?.id ?? null)}
-                        disabled={!workersEnabled || isUploading === 'T1_FORM'}
-                      >
-                        <Upload className="size-3 mr-1.5" />
-                        {isUploading === 'T1_FORM' ? 'Uploading…' : 'Upload T1'}
-                      </Button>
-                    )}
-                    {t1Doc?.driveUrl && t1Doc?.status === 'VERIFIED' && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            const { url } = await getClientDocumentSignedUrl(t1Doc.id);
-                            await downloadFileBlob(url, `T1_Document.pdf`);
-                            showToast('T1 Document downloaded successfully!', 'success');
-                          } catch (e) {
-                            showToast(`Failed to download T1 document: ${String(e)}`);
-                          }
-                        }}
-                        className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        <Download className="size-3 mr-1.5" />
-                        Download
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="min-w-0">
@@ -1224,7 +1146,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               <div className="space-y-2 sm:space-y-3">
                 {opsDocs.filter(({ doc }) => doc !== null).map(({ docType, doc }) => {
                   const status = doc?.status ?? 'pending'; // already mapped via documentsByType
-                  const isNotAvailable = (status as string) === 'not_available';
+                  const isNotAvailable = status === 'not_available';
                   return (
                     <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
