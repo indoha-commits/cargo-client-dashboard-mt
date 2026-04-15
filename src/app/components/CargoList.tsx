@@ -114,7 +114,7 @@ function mapShipmentToRow(s: ClientShipmentRow): CargoRow[] {
     lastUpdate: s.created_at,
     nextRequiredAction: s.next_required_action,
     status: groupStatus,
-    statusLabel: groupStatus === 'IN_PROGRESS' ? 'Docs verified' : statusConfig[groupStatus].label,
+    statusLabel: groupStatus === 'IN_PROGRESS' ? mapActionLabel(s.next_required_action) : statusConfig[groupStatus].label,
     completionLabel,
     showGroupIcon: true,
     isGroupRow: true,
