@@ -109,6 +109,13 @@ export type ClientCargoDetail = {
       all_submitted: boolean;
       all_verified: boolean;
     };
+    customs_documents?: {
+      total_required: number;
+      total_submitted: number;
+      total_verified: number;
+      all_submitted: boolean;
+      all_verified: boolean;
+    };
   };
   documents: Array<{
     id: string;

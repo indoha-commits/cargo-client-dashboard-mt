@@ -15,7 +15,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Toast, ToastType } from './Toast';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { requiredDocsForCategory, formatLabel as formatCategoryLabel } from '../api/categories';
+import {
+  requiredDocsForCategory,
+  formatLabel as formatCategoryLabel,
+  customsClearanceSlots,
+  getClearancePathwayLabel,
+  type ClearancePathway,
+} from '../api/categories';
 import {
   approveClientCargoApproval,
   getClientApprovalSignedUrl,
@@ -71,6 +77,28 @@ function mapDocStatus(status: string): UiDocument['status'] {
   return 'pending';
 }
 
+function rankDocStatus(s: UiDocument['status']): number {
+  if (s === 'verified') return 4;
+  if (s === 'uploaded') return 3;
+  if (s === 'not_available') return 2;
+  if (s === 'rejected') return 1;
+  return 0;
+}
+
+/** Prefer the strongest row among IM7/IM8 (or other alternates in one slot). */
+function pickPrimaryDocForSlot(
+  documentsByType: Record<string, UiDocument[]>,
+  docTypes: string[]
+): UiDocument | null {
+  let best: UiDocument | null = null;
+  for (const t of docTypes) {
+    const row = documentsByType[t]?.[0];
+    if (!row) continue;
+    if (!best || rankDocStatus(row.status) > rankDocStatus(best.status)) best = row;
+  }
+  return best;
+}
+
 function docDisplayName(documentType: string): string {
   switch (documentType) {
     case 'BILL_OF_LADING':
@@ -85,8 +113,20 @@ function docDisplayName(documentType: string): string {
       return 'Import License';
     case 'TYPE_APPROVAL':
       return 'Type Approval';
+    case 'DRAFT_DECLARATION':
+      return 'Draft declaration';
+    case 'ASSESSMENT':
+      return 'Assessment';
+    case 'WH7':
+      return 'WH7';
     case 'T1':
-      return 'T1 Document';
+      return 'T1';
+    case 'T1_FORM':
+      return 'T1 form';
+    case 'IM7':
+      return 'IM7';
+    case 'IM8':
+      return 'IM8';
     case 'IM4':
       return 'IM4 Document';
     case 'WH7_DOC':
@@ -113,6 +153,11 @@ function formatIso(ts: string | null | undefined): { date: string; time: string 
 
 function mapEventHeadline(eventType: string): { status: string; location?: string } {
   switch (eventType) {
+    case 'PORT_OFFLOADED':
+      return {
+        status: 'Port offloaded',
+        location: 'Container discharged at the port of arrival.',
+      };
     case 'CREATED':
       return {
         status: 'Cargo created',
@@ -204,6 +249,55 @@ function mapEventsToTimeline(events: ClientCargoDetail['events']): UiTimelineEve
         completed: true,
       };
     });
+}
+
+/**
+ * For ops imports that already reached the warehouse, show the full milestone chain as complete
+ * even when only the final event was persisted.
+ */
+function mergeImportWarehouseTimeline(
+  events: ClientCargoDetail['events'],
+  isImport: boolean
+): UiTimelineEvent[] | null {
+  if (!isImport || !events?.length) return null;
+  const whEvents = events.filter(
+    (e) => e.event_type === 'WAREHOUSE_ARRIVAL' || e.event_type === 'CARGO_REACHED_WAREHOUSE'
+  );
+  if (!whEvents.length) return null;
+  const whEvent = whEvents.reduce((best, e) =>
+    Date.parse(e.event_time) > Date.parse(best.event_time) ? e : best
+  );
+  const order = [
+    'PORT_OFFLOADED',
+    'ALL_DOCUMENTS_APPROVED',
+    'DEPARTED_PORT',
+    'IN_ROUTE_RUSUMO',
+    'PHYSICAL_VERIFICATION',
+    'WAREHOUSE_ARRIVAL',
+  ] as const;
+  const byType = new Map(events.map((e) => [e.event_type, e]));
+  const eventTimeFor = (eventType: string) => {
+    const direct = byType.get(eventType)?.event_time;
+    if (direct) return direct;
+    if (eventType === 'WAREHOUSE_ARRIVAL') {
+      return byType.get('CARGO_REACHED_WAREHOUSE')?.event_time;
+    }
+    return undefined;
+  };
+  const baseTime = Date.parse(whEvent.event_time);
+  return order.map((eventType, i) => {
+    const iso =
+      eventTimeFor(eventType) ?? new Date(baseTime - (order.length - 1 - i) * 1500).toISOString();
+    const headline = mapEventHeadline(eventType);
+    const { date, time } = formatIso(iso);
+    return {
+      date,
+      time,
+      status: headline.status,
+      location: headline.location ?? '—',
+      completed: true,
+    };
+  });
 }
 
 function buildDerivedTimeline(detail: ClientCargoDetail, approvals: CargoApproval[]): UiTimelineEvent[] {
@@ -327,7 +421,8 @@ function getNextRequiredActionInfo(rawAction: string): NextRequiredActionInfo {
       };
     case 'COMPLETE':
       return {
-        title: 'No action required',
+        title: 'Shipment complete',
+        subtitle: 'All milestones for this import are recorded.',
         raw: rawAction,
       };
     default:
@@ -348,11 +443,11 @@ function computeSlaHint(
   eta: string | null | undefined,
   nextRequiredAction: string | null | undefined
 ): { label: string; tone: 'ok' | 'risk' } | null {
-  if (!eta) return null;
   const action = String(nextRequiredAction || '').toUpperCase();
   if (['WAREHOUSE_ARRIVAL', 'CARGO_ARRIVED_TO_YOUR_LOCATION', 'COMPLETE'].includes(action)) {
     return { label: 'SLA: Completed', tone: 'ok' };
   }
+  if (!eta) return null;
   const etaTime = Date.parse(eta);
   if (Number.isNaN(etaTime)) return null;
 
@@ -398,7 +493,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const workersEnabled = (import.meta.env.VITE_WORKERS_ENABLED ?? 'true') === 'true';
 
   const [detail, setDetail] = useState<ClientCargoDetail | null>(null);
-  const [activeCargoId, setActiveCargoId] = useState(cargoId);
   const [approvals, setApprovals] = useState<CargoApproval[]>([]);
   const [approvalsError, setApprovalsError] = useState<string | null>(null);
   const [approvalsBusyId, setApprovalsBusyId] = useState<string | null>(null);
@@ -408,7 +502,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   const [uploadReplaceDocId, setUploadReplaceDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
-  const [selectedContainerId, setSelectedContainerId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Toast notifications
@@ -426,12 +519,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     }
 
     setLoading(true);
-    getClientCargoDetail(activeCargoId)
+    getClientCargoDetail(cargoId)
       .then((d) => {
         if (cancelled) return;
         setDetail(d);
         setApprovalsError(null);
-        return getClientCargoApprovals(activeCargoId)
+        return getClientCargoApprovals(cargoId)
           .then((approvalsRes) => {
             if (cancelled) return;
             setApprovals(approvalsRes.approvals);
@@ -456,7 +549,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return () => {
       cancelled = true;
     };
-  }, [activeCargoId, workersEnabled]);
+  }, [cargoId, workersEnabled]);
 
   // Real-time subscriptions for cargo updates
   useEffect(() => {
@@ -465,10 +558,10 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     const supabase = getSupabase();
 
     const refreshCargoData = () => {
-      getClientCargoDetail(activeCargoId)
+      getClientCargoDetail(cargoId)
         .then((d) => {
           setDetail(d);
-          return getClientCargoApprovals(activeCargoId);
+          return getClientCargoApprovals(cargoId);
         })
         .then((approvalsRes) => {
           setApprovals(approvalsRes.approvals);
@@ -480,14 +573,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo_events table (timeline updates)
     const eventsSubscription = supabase
-      .channel(`cargo_events_${activeCargoId}`)
+      .channel(`cargo_events_${cargoId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'cargo_events',
-          filter: `cargo_id=eq.${activeCargoId}`,
+          filter: `cargo_id=eq.${cargoId}`,
         },
         () => {
           refreshCargoData();
@@ -497,14 +590,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to client_documents table (document uploads/updates)
     const documentsSubscription = supabase
-      .channel(`client_documents_${activeCargoId}`)
+      .channel(`client_documents_${cargoId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'client_documents',
-          filter: `cargo_id=eq.${activeCargoId}`,
+          filter: `cargo_id=eq.${cargoId}`,
         },
         () => {
           refreshCargoData();
@@ -514,14 +607,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo_client_approvals table (approval status changes)
     const approvalsSubscription = supabase
-      .channel(`cargo_approvals_${activeCargoId}`)
+      .channel(`cargo_approvals_${cargoId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'cargo_client_approvals',
-          filter: `cargo_id=eq.${activeCargoId}`,
+          filter: `cargo_id=eq.${cargoId}`,
         },
         () => {
           refreshCargoData();
@@ -531,14 +624,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
 
     // Subscribe to cargo table (general cargo updates)
     const cargoSubscription = supabase
-      .channel(`cargo_${activeCargoId}`)
+      .channel(`cargo_${cargoId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'cargo',
-          filter: `id=eq.${activeCargoId}`,
+          filter: `id=eq.${cargoId}`,
         },
         () => {
           refreshCargoData();
@@ -552,15 +645,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       supabase.removeChannel(approvalsSubscription);
       supabase.removeChannel(cargoSubscription);
     };
-  }, [activeCargoId, workersEnabled]);
-
-  useEffect(() => {
-    if (selectedContainerId) {
-      setActiveCargoId(selectedContainerId);
-    } else {
-      setActiveCargoId(cargoId);
-    }
-  }, [selectedContainerId, cargoId]);
+  }, [cargoId, workersEnabled]);
 
   const nextRequiredAction = detail?.projection?.next_required_action ?? 'CLIENT_UPLOAD_REQUIRED_DOCUMENTS';
   const nextRequiredActionLabel = nextRequiredAction
@@ -587,13 +672,19 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     [detail?.cargo.eta, detail?.projection?.next_required_action]
   );
 
-  const opsDocTypes = ['WH7', 'ASSESSMENT', 'DRAFT_DECLARATION', 'EXIT_NOTE', 'IM4', 'IM7', 'IM8', 'T1'];
+  const clearancePathway = (detail?.cargo.clearance_pathway || 'PORT_CLEARANCE') as ClearancePathway;
+
+  const customsTypeSet = useMemo(() => {
+    const s = new Set<string>();
+    customsClearanceSlots(clearancePathway).forEach((slot) => slot.docTypes.forEach((t) => s.add(t)));
+    return s;
+  }, [clearancePathway]);
+
   const requiredDocs = useMemo(() => {
     if (!detail?.cargo.category) return [] as string[];
-    const pathway = detail.cargo.clearance_pathway || 'PORT_CLEARANCE';
-    const docs = requiredDocsForCategory(detail.cargo.category as any, pathway);
-    return docs.filter((doc) => !opsDocTypes.includes(doc));
-  }, [detail?.cargo.category, detail?.cargo.clearance_pathway, opsDocTypes]);
+    const docs = requiredDocsForCategory(detail.cargo.category as any, clearancePathway);
+    return docs.filter((doc) => !customsTypeSet.has(doc));
+  }, [detail?.cargo.category, clearancePathway, customsTypeSet]);
 
   const documentsByType = useMemo(() => {
     if (!detail) return {} as Record<string, UiDocument[]>;
@@ -621,15 +712,21 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     return grouped;
   }, [detail]);
 
-  const opsDocs = useMemo(() => {
-    return opsDocTypes.map((docType) => ({
-      docType,
-      doc: documentsByType[docType]?.[0] ?? null,
-    }));
-  }, [documentsByType, opsDocTypes]);
+  const customsSlots = useMemo(() => customsClearanceSlots(clearancePathway), [clearancePathway]);
+
+  const customsRows = useMemo(
+    () =>
+      customsSlots.map((slot) => ({
+        slot,
+        doc: pickPrimaryDocForSlot(documentsByType, slot.docTypes),
+      })),
+    [customsSlots, documentsByType]
+  );
 
   const timelineEvents: UiTimelineEvent[] = useMemo(() => {
     if (!detail) return [];
+    const merged = mergeImportWarehouseTimeline(detail.events, detail.cargo.is_import);
+    if (merged?.length) return merged;
     const mapped = mapEventsToTimeline(detail.events);
     if (mapped.length) return mapped;
 
@@ -642,43 +739,23 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
   }, [timelineEvents]);
 
   const uploadProgress = useMemo(() => {
-    if (requiredDocs.length === 0) {
+    if (!detail || requiredDocs.length === 0) {
       return { total: 0, uploaded: 0, verified: 0 };
     }
+    const treatNaAsDone = Boolean(detail.cargo.is_import);
     return requiredDocs.reduce(
       (acc, docType) => {
         const doc = documentsByType[docType]?.[0];
-        const effectiveStatus = doc?.status;
-        if (effectiveStatus === 'verified') acc.verified += 1;
-        if (effectiveStatus === 'uploaded') acc.uploaded += 1;
+        const st = doc?.status;
+        if (st === 'verified') acc.verified += 1;
+        else if (treatNaAsDone && st === 'not_available') acc.verified += 1;
+        if (st === 'uploaded' || st === 'verified' || (treatNaAsDone && st === 'not_available')) acc.uploaded += 1;
         acc.total += 1;
         return acc;
       },
       { total: 0, uploaded: 0, verified: 0 }
     );
-  }, [documentsByType, requiredDocs]);
-
-  const containers = useMemo(() => {
-    if (!detail?.cargo.bill_of_lading_group) return [] as Array<{
-      cargo_id: string;
-      latest_event: string | null;
-      latest_event_time: string | null;
-      next_required_action: string;
-    }>;
-    return detail.shipments?.find((s) => s.bill_of_lading === detail.cargo.bill_of_lading_group)?.containers ?? [];
-  }, [detail]);
-
-  useEffect(() => {
-    if (!selectedContainerId && containers.length > 0) {
-      setSelectedContainerId(containers[0].cargo_id);
-    }
-  }, [containers, selectedContainerId]);
-
-  const formatContainerStatus = (action: string) =>
-    action
-      .replace(/_/g, ' ')
-      .toLowerCase()
-      .replace(/(^|\s)\S/g, (s) => s.toUpperCase());
+  }, [documentsByType, requiredDocs, detail]);
 
   const handleApprovalApprove = async (approvalId: string) => {
     try {
@@ -731,22 +808,22 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
       setUploadError(null);
 
       const { path } = await uploadClientDocumentFile({
-        cargoId: activeCargoId,
+        cargoId,
         documentType: uploadDocType,
         file,
       });
 
       // For private buckets, the backend stores the storage object path (not a public URL)
       await insertClientDocument({
-        cargoId: activeCargoId,
+        cargoId,
         documentType: uploadDocType,
         driveUrl: path,
         replaceDocumentId: uploadReplaceDocId ?? undefined,
       });
 
       const [refreshed, approvalsRes] = await Promise.all([
-        getClientCargoDetail(activeCargoId),
-        getClientCargoApprovals(activeCargoId),
+        getClientCargoDetail(cargoId),
+        getClientCargoApprovals(cargoId),
       ]);
       setDetail(refreshed);
       setApprovals(approvalsRes.approvals);
@@ -957,13 +1034,14 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div className="min-w-0">
-                  <h3 className="text-foreground text-sm sm:text-xl">Required Documents</h3>
+                  <h3 className="text-foreground text-sm sm:text-xl">Upload required documents</h3>
                   <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex flex-col sm:flex-row sm:items-center gap-2">
                     {detail?.cargo.category
                       ? `Category: ${formatCategoryLabel(detail.cargo.category)}`
                       : 'Category not set'}
+                    {' · '}
+                    {getClearancePathwayLabel(clearancePathway)}
                     {' · '}Updated: {formatFriendlyDate(documentsLastUpdated)}
-                    {detail?.cargo.bill_of_lading_group ? ' · Applies to all containers.' : ''}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -1070,7 +1148,9 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>
                             )}
                             {status === 'not_available' && (
-                              <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>
+                              <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">
+                                {detail?.cargo.is_import ? 'Verified (N/A)' : 'Not Available'}
+                              </Badge>
                             )}
                             {status === 'pending' && (
                               <Badge className="bg-muted text-foreground rounded-sm text-xs sm:text-sm">Required</Badge>
@@ -1135,10 +1215,12 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
             <div className="bg-card border border-border rounded-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="min-w-0">
-                  <h3 className="text-foreground text-sm sm:text-xl">Drafts, Assessments &amp; Ops Docs</h3>
-                  <div className="text-xs sm:text-base text-muted-foreground mt-0.5">Review and approve drafts for taxes/clearance.</div>
+                  <h3 className="text-foreground text-sm sm:text-xl">Customs clearance documents</h3>
+                  <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
+                    {getClearancePathwayLabel(clearancePathway)} — prepared by operations; download when available.
+                  </div>
                 </div>
-                <div className="text-xs sm:text-base text-muted-foreground shrink-0 ml-2">{approvals.length} items</div>
+                <div className="text-xs sm:text-base text-muted-foreground shrink-0 ml-2">{approvals.length} approvals</div>
               </div>
 
               {approvalsError && (
@@ -1148,67 +1230,88 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
               )}
 
               <div className="space-y-2 sm:space-y-3">
-                {opsDocs.filter(({ doc }) => doc !== null).map(({ docType, doc }) => {
-                  const status = doc?.status ?? 'pending'; // already mapped via documentsByType
+                {customsRows.map(({ slot, doc }) => {
+                  const status = doc?.status ?? 'pending';
                   const isNotAvailable = status === 'not_available';
+                  const countsAsVerified = status === 'verified' || (Boolean(detail?.cargo.is_import) && isNotAvailable);
                   return (
-                    <div key={docType} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
+                    <div key={slot.label} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
                       <div className="flex items-start gap-2">
                         <FileText className="size-4 sm:size-6 text-muted-foreground shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground text-sm sm:text-lg font-medium">{docDisplayName(docType)}</div>
+                          <div className="text-foreground text-sm sm:text-lg font-medium">{slot.label}</div>
                           <div className="text-xs sm:text-base text-muted-foreground mt-0.5">
-                            {isNotAvailable
-                              ? 'Not available for this shipment'
-                              : doc?.driveUrl
-                                ? doc?.uploadedDate ? `Uploaded ${doc.uploadedDate}` : 'Uploaded'
-                                : status === 'verified'
-                                  ? doc?.uploadedDate ? `Verified by ops · ${doc.uploadedDate}` : 'Verified by ops'
-                                  : 'No file uploaded yet'}
+                            {!doc
+                              ? 'Not recorded yet'
+                              : isNotAvailable
+                                ? detail?.cargo.is_import
+                                  ? 'Marked not applicable — counts as cleared for this import.'
+                                  : 'Not available for this shipment'
+                                : doc?.driveUrl
+                                  ? doc?.uploadedDate
+                                    ? `Uploaded ${doc.uploadedDate}`
+                                    : 'Uploaded'
+                                  : status === 'verified'
+                                    ? doc?.uploadedDate
+                                      ? `Verified by ops · ${doc.uploadedDate}`
+                                      : 'Verified by ops'
+                                    : 'No file uploaded yet'}
                           </div>
                         </div>
                         <div className="shrink-0">
-                          {status === 'verified' && <Badge className="bg-[#10b981] text-white rounded-sm text-xs sm:text-sm">Verified</Badge>}
-                          {status === 'uploaded' && <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs sm:text-sm">Uploaded</Badge>}
-                          {status === 'rejected' && <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>}
-                          {isNotAvailable && <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>}
-                          {status === 'pending' && <Badge className="bg-muted text-foreground rounded-sm text-xs sm:text-sm">Pending</Badge>}
+                          {countsAsVerified && (
+                            <Badge className="bg-[#10b981] text-white rounded-sm text-xs sm:text-sm">Verified</Badge>
+                          )}
+                          {status === 'uploaded' && (
+                            <Badge className="bg-[#f59e0b] text-white rounded-sm text-xs sm:text-sm">Uploaded</Badge>
+                          )}
+                          {status === 'rejected' && (
+                            <Badge className="bg-[#ef4444] text-white rounded-sm text-xs sm:text-sm">Rejected</Badge>
+                          )}
+                          {isNotAvailable && !detail?.cargo.is_import && (
+                            <Badge className="bg-[#6b7280] text-white rounded-sm text-xs sm:text-sm">Not Available</Badge>
+                          )}
+                          {status === 'pending' && !countsAsVerified && (
+                            <Badge className="bg-muted text-foreground rounded-sm text-xs sm:text-sm">Pending</Badge>
+                          )}
                         </div>
                       </div>
                       {!isNotAvailable && (
-                      <div className="flex justify-end">
-                        {doc?.driveUrl ? (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const { url } = await getClientDocumentSignedUrl(doc.id);
-                                const filename = `${docDisplayName(doc.type)}.pdf`;
-                                await downloadFileBlob(url, filename);
-                                showToast('Document downloaded successfully!', 'success');
-                              } catch (e) {
-                                showToast(`Failed to download document: ${String(e)}`);
-                              }
-                            }}
-                            className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
-                          >
-                            <Download className="size-3 sm:size-4 mr-1.5" />
-                            Download
-                          </button>
-                        ) : status === 'verified' ? (
-                          <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
-                            <Check className="size-3 sm:size-4 text-emerald-500" />
-                            Verified by Ops
-                          </span>
-                        ) : null}
-                      </div>
+                        <div className="flex justify-end">
+                          {doc?.driveUrl ? (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const { url } = await getClientDocumentSignedUrl(doc.id);
+                                  const filename = `${docDisplayName(doc.type)}.pdf`;
+                                  await downloadFileBlob(url, filename);
+                                  showToast('Document downloaded successfully!', 'success');
+                                } catch (e) {
+                                  showToast(`Failed to download document: ${String(e)}`);
+                                }
+                              }}
+                              className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
+                            >
+                              <Download className="size-3 sm:size-4 mr-1.5" />
+                              Download
+                            </button>
+                          ) : status === 'verified' ? (
+                            <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1">
+                              <Check className="size-3 sm:size-4 text-emerald-500" />
+                              Verified by Ops
+                            </span>
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   );
                 })}
 
-                {approvals.length === 0 && opsDocs.filter(({ doc }) => doc !== null).length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No drafts or assessments have been shared yet.</div>
+                {approvals.length === 0 && customsRows.every(({ doc }) => !doc) ? (
+                  <div className="text-sm text-muted-foreground">
+                    No customs clearance documents are on file yet for this pathway.
+                  </div>
                 ) : approvals.length === 0 ? null : (
                   approvals.map((a) => (
                     <div key={a.id} className="flex flex-col gap-2 p-3 sm:p-4 border border-border rounded-sm">
@@ -1290,37 +1393,6 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 </Button>
               </div>
 
-              {containers.length > 0 && (
-                <div className="mb-4 rounded-sm border border-border bg-muted/20">
-                  <div className="px-3 py-2 border-b border-border text-xs text-muted-foreground">
-                    Containers in this group
-                  </div>
-                  <div className="divide-y divide-border">
-                    {containers.map((container) => (
-                      <button
-                        key={container.cargo_id}
-                        type="button"
-                        onClick={() => setSelectedContainerId(container.cargo_id)}
-                        className={`w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-muted/40 transition-colors gap-2 ${
-                          selectedContainerId === container.cargo_id ? 'bg-muted/30' : ''
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <div className="text-foreground text-xs sm:text-sm truncate">{container.cargo_id}</div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {formatContainerStatus(container.next_required_action)}
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground shrink-0">
-                          {container.latest_event_time
-                            ? formatFriendlyDate(container.latest_event_time)
-                            : 'No updates'}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               {timelineExpanded && (
                 <div className="space-y-4">
                   {timelineEvents.map((event, index, arr) => (
@@ -1368,12 +1440,28 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 <div className="text-xs sm:text-sm text-muted-foreground mt-0.5">Next Required Action</div>
               </div>
 
-              <div className="flex items-start gap-3 rounded-md border border-primary/30 bg-primary/10 p-3 sm:p-4">
-                <div className="mt-0.5 rounded-full bg-primary/20 p-1.5 sm:p-2 shrink-0">
-                  <TriangleAlert className="size-4 text-primary" />
+              <div
+                className={`flex items-start gap-3 rounded-md border p-3 sm:p-4 ${
+                  nextRequiredAction === 'COMPLETE'
+                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                    : 'border-primary/30 bg-primary/10'
+                }`}
+              >
+                <div
+                  className={`mt-0.5 rounded-full p-1.5 sm:p-2 shrink-0 ${
+                    nextRequiredAction === 'COMPLETE' ? 'bg-emerald-500/20' : 'bg-primary/20'
+                  }`}
+                >
+                  {nextRequiredAction === 'COMPLETE' ? (
+                    <Check className="size-4 text-emerald-600" />
+                  ) : (
+                    <TriangleAlert className="size-4 text-primary" />
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-foreground text-xs sm:text-sm uppercase tracking-wide">Action needed</div>
+                  <div className="text-foreground text-xs sm:text-sm uppercase tracking-wide">
+                    {nextRequiredAction === 'COMPLETE' ? 'Status' : 'Action needed'}
+                  </div>
                   <div className="text-sm sm:text-xl text-foreground font-semibold mt-1 break-words">
                     {nextRequiredActionInfo.title}
                   </div>
