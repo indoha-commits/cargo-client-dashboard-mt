@@ -737,6 +737,30 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     if (!timelineEvents.length) return null;
     return timelineEvents[timelineEvents.length - 1];
   }, [timelineEvents]);
+  const displayMilestone = useMemo(() => {
+    if (!detail) return lastMilestone;
+    if (nextRequiredAction !== 'COMPLETE') return lastMilestone;
+
+    const warehouseEvents = detail.events.filter(
+      (e) => e.event_type === 'WAREHOUSE_ARRIVAL' || e.event_type === 'CARGO_REACHED_WAREHOUSE'
+    );
+    if (!warehouseEvents.length) {
+      return lastMilestone
+        ? { ...lastMilestone, status: 'Shipment complete' }
+        : null;
+    }
+    const latestWarehouse = warehouseEvents.reduce((best, e) =>
+      Date.parse(e.event_time) > Date.parse(best.event_time) ? e : best
+    );
+    const t = formatIso(latestWarehouse.event_time);
+    return {
+      date: t.date,
+      time: t.time,
+      status: 'Shipment complete',
+      location: 'Shipment received at the warehouse.',
+      completed: true,
+    } satisfies UiTimelineEvent;
+  }, [detail, nextRequiredAction, lastMilestone]);
 
   const uploadProgress = useMemo(() => {
     if (!detail || requiredDocs.length === 0) {
@@ -1485,8 +1509,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                     <div className="min-w-0">
                       <div className="text-foreground font-semibold text-sm sm:text-base">Last milestone</div>
                       <div className="text-xs sm:text-base text-muted-foreground mt-1 break-words">
-                        {lastMilestone
-                          ? `${lastMilestone.status} · ${lastMilestone.date} ${lastMilestone.time}`
+                        {displayMilestone
+                          ? `${displayMilestone.status} · ${displayMilestone.date} ${displayMilestone.time}`
                           : 'No milestone recorded yet'}
                       </div>
                     </div>
@@ -1501,7 +1525,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground text-xs sm:text-base">Last Milestone</span>
                   <span className="text-foreground text-xs sm:text-base text-right">
-                    {lastMilestone ? `${lastMilestone.status} (${lastMilestone.date} ${lastMilestone.time})` : '—'}
+                    {displayMilestone ? `${displayMilestone.status} (${displayMilestone.date} ${displayMilestone.time})` : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
