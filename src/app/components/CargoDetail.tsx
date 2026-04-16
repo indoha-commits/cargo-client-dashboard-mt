@@ -781,6 +781,11 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
     );
   }, [documentsByType, requiredDocs, detail]);
 
+  const hasAnyDownloadableFiles = useMemo(() => {
+    if (!detail) return false;
+    return detail.documents.some((d) => Boolean(d.drive_url || d.source_storage_path || d.provider_path));
+  }, [detail]);
+
   const handleApprovalApprove = async (approvalId: string) => {
     try {
       setApprovalsBusyId(approvalId);
@@ -1076,8 +1081,8 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                         : `${uploadProgress.verified}/${uploadProgress.total} verified · ${uploadProgress.uploaded}/${uploadProgress.total} submitted`
                       : '—'}
                   </div>
-                  {/* Download All — shown when all docs are verified */}
-                  {uploadProgress.verified > 0 && uploadProgress.verified === uploadProgress.total && (
+                  {/* Download ZIP — shown when any file exists */}
+                  {hasAnyDownloadableFiles && (
                     <button
                       type="button"
                       onClick={async () => {
@@ -1116,7 +1121,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                       className="inline-flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-sm border border-border text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors whitespace-nowrap"
                     >
                       <Download className="size-3 sm:size-4" />
-                      Download All (ZIP)
+                      Download available files (ZIP)
                     </button>
                   )}
                 </div>
