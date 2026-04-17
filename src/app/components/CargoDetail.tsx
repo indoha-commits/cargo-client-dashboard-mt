@@ -491,6 +491,68 @@ async function downloadFileBlob(url: string, filename: string) {
   window.URL.revokeObjectURL(downloadUrl);
 }
 
+function inferExtensionFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const pathname = decodeURIComponent(u.pathname || '');
+    const base = pathname.split('/').pop() || '';
+    const dot = base.lastIndexOf('.');
+    if (dot <= 0 || dot === base.length - 1) return null;
+    const ext = base.slice(dot + 1).toLowerCase();
+    if (!/^[a-z0-9]{1,8}$/.test(ext)) return null;
+    return ext;
+  } catch {
+    // Might be a relative path or opaque signed URL; do a best-effort parse.
+    const withoutQuery = String(url).split('?')[0] || '';
+    const base = withoutQuery.split('/').pop() || '';
+    const dot = base.lastIndexOf('.');
+    if (dot <= 0 || dot === base.length - 1) return null;
+    const ext = base.slice(dot + 1).toLowerCase();
+    if (!/^[a-z0-9]{1,8}$/.test(ext)) return null;
+    return ext;
+  }
+}
+
+function inferExtensionFromContentType(contentType: string | null): string | null {
+  const ct = String(contentType || '').toLowerCase();
+  if (!ct) return null;
+  if (ct.includes('application/pdf')) return 'pdf';
+  if (ct.includes('image/jpeg')) return 'jpg';
+  if (ct.includes('image/png')) return 'png';
+  if (ct.includes('image/webp')) return 'webp';
+  if (ct.includes('application/msword')) return 'doc';
+  if (ct.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) return 'docx';
+  if (ct.includes('application/vnd.ms-excel')) return 'xls';
+  if (ct.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) return 'xlsx';
+  return null;
+}
+
+async function downloadFileBlobSmart(url: string, baseName: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Download failed');
+
+  const blob = await response.blob();
+  const ctExt = inferExtensionFromContentType(response.headers.get('content-type'));
+  const urlExt = inferExtensionFromUrl(url);
+  const ext = urlExt || ctExt || 'pdf';
+  const filename = `${baseName}.${ext}`;
+
+  // Sanitize filename to prevent XSS and path traversal
+  const sanitizedFilename = filename
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .replace(/^\.+/, '')
+    .substring(0, 255);
+
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = sanitizedFilename || `document.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
 export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDetailProps) {
   const workersEnabled = (import.meta.env.VITE_WORKERS_ENABLED ?? 'true') === 'true';
 
@@ -1216,8 +1278,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               onClick={async () => {
                                 try {
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
-                                  const filename = `${docDisplayName(doc.type)}.pdf`;
-                                  await downloadFileBlob(url, filename);
+                                  await downloadFileBlobSmart(url, docDisplayName(doc.type));
                                   showToast('Document downloaded successfully!', 'success');
                                 } catch (e) {
                                   showToast(`Failed to download document: ${String(e)}`);
@@ -1315,8 +1376,7 @@ export function CargoDetail({ cargoId, onBack, onToggleTheme, theme }: CargoDeta
                               onClick={async () => {
                                 try {
                                   const { url } = await getClientDocumentSignedUrl(doc.id);
-                                  const filename = `${docDisplayName(doc.type)}.pdf`;
-                                  await downloadFileBlob(url, filename);
+                                  await downloadFileBlobSmart(url, docDisplayName(doc.type));
                                   showToast('Document downloaded successfully!', 'success');
                                 } catch (e) {
                                   showToast(`Failed to download document: ${String(e)}`);
