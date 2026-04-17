@@ -129,6 +129,8 @@ function docDisplayName(documentType: string): string {
       return 'IM8';
     case 'IM4':
       return 'IM4 Document';
+    case 'CHANGE_OF_OWNERSHIP':
+      return 'Change of ownership';
     case 'WH7_DOC':
       return 'WH7 Document';
     case 'EXIT_NOTE':

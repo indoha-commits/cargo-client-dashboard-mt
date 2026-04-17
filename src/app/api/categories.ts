@@ -33,6 +33,7 @@ export function customsClearanceSlots(pathway: ClearancePathway): { label: strin
     { label: 'T1', docTypes: ['T1'] },
     { label: 'T1 form', docTypes: ['T1_FORM'] },
     { label: 'WH7', docTypes: ['WH7'] },
+    { label: 'Change of ownership', docTypes: ['CHANGE_OF_OWNERSHIP'] },
     { label: 'IM7 / IM8', docTypes: ['IM7', 'IM8'] },
   ];
 }
@@ -63,7 +64,7 @@ export function getPathwayDescription(pathway: ClearancePathway): string {
   if (pathway === 'PORT_CLEARANCE') {
     return 'Customs clearance at port with immediate tax payment. Draft, assessment, WH7, and exit note are prepared by operations.';
   }
-  return 'T1 transit: draft, assessment, T1, T1 form, WH7, and IM7 or IM8 are prepared by operations under this pathway.';
+  return 'T1 transit: draft, assessment, T1, T1 form, WH7, change of ownership, and IM7 or IM8 are prepared by operations under this pathway.';
 }
 
 export function formatLabel(value?: string | null): string {
